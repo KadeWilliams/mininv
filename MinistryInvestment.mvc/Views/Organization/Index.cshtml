@@ -1,0 +1,1584 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.OrganizationViewModel
+<style>
+    .detailHeaderLabelNotes {
+        text-align: start;
+        width: 150px;
+        padding: 10px 5px;
+    }
+
+    .image-container {
+        position: relative;
+    }
+
+        .image-container img {
+            display: block;
+        }
+
+    img {
+        height: 100%;
+        width: 100%;
+    }
+
+    button.nav-link:not(.active) {
+        background-color: #084baf !important;
+        color: white !important;
+        border-color: #cedbef;
+    }
+
+    button.nav-link.active {
+        background-color: #cedbef !important;
+        color: #084baf !important;
+        box-sizing: border-box;
+        border-color: #084baf;
+        <!-- border: 2px solid #084baf !important; -->
+    }
+
+    .dt-search {
+        padding: 10px;
+    }
+
+    .nav-tabs {
+        border-bottom: none;
+    }
+
+    .card {
+        border-radius: 0 !important;
+    }
+
+    canvas {
+        max-height: 300px;
+        max-width: 300px;
+    }
+
+    #giftsContainer, #schedules {
+        width: 100%;
+        height: 50vh;
+        overflow: auto;
+        text-align: justify;
+    }
+
+    #progress-bar-container {
+        margin: 0 0 30px 0;
+        width: 100%;
+        height: 8px;
+        position: relative;
+    }
+
+    th, td {
+        white-space: nowrap;
+    }
+
+    .input-validation-error:not([type='checkbox']) {
+        background-color: #FFD6D6;
+    }
+
+</style>
+@section scripts {
+    <script>
+        $(document).ready(() => {
+            $('#OrganizationDetails_Organization_CategoryID').data('other-id', @Model.CategoryOtherID);
+            $('#ContentServer').data('folder-url', `@Model.ContentServerFolderURL`);
+
+            $('#contacts-tab').data('has-edit-permissions', '@Model.MenuPermissions.HasEditPermissions' == 'True');
+            $('#addresses-tab').data('has-edit-permissions', '@Model.MenuPermissions.HasEditPermissions' == 'True');
+        });
+    </script>
+    <script src="~/js/dist/organization.bundle.js"></script>
+}
+@if (!Model.MenuPermissions.HasEditPermissions)
+{
+    <script>
+        $(document).keydown(function (objEvent) {
+            if (objEvent.keyCode == 9) {
+                objEvent.preventDefault();
+            }
+        })
+    </script>
+    <style>
+        label {
+            pointer-events: none;
+        }
+
+        .ts-control {
+            pointer-events: none;
+        }
+    </style>
+}
+@*
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            window.addEventListener("paste", e => {
+                let items = e.clipboardData.files;
+                if (items.length === 0 || !items[0].type.includes("image")) return;
+
+                var canvas = document.getElementById("my_canvas");
+                canvas.style.display = "block";
+                const fileInput = document.querySelector("#OrganizationDetails_Organization_OrganizationLogo");
+                fileInput.files = items;
+            });
+
+            function CLIPBOARD_CLASS(canvas_id, autoresize) {
+                var _self = this;
+                var canvas = document.getElementById(canvas_id);
+                var ctx = document.getElementById(canvas_id).getContext("2d");
+
+                //handlers
+                document.addEventListener('paste', function (e) { _self.paste_auto(e); }, false);
+
+                //on paste
+                this.paste_auto = function (e) {
+                    if (e.clipboardData) {
+                        var items = e.clipboardData.items;
+                        if (!items) return;
+
+                        //access data directly
+                        var is_image = false;
+                        for (var i = 0; i < items.length; i++) {
+                            if (items[i].type.indexOf("image") !== -1) {
+                                //image
+                                var blob = items[i].getAsFile();
+
+                                var URLObj = window.URL || window.webkitURL;
+                                var source = URLObj.createObjectURL(blob);
+
+                                this.paste_createImage(source);
+                                is_image = true;
+                            }
+                        }
+                        if (is_image == true) {
+                            e.preventDefault();
+                        }
+                    }
+                };
+                //draw pasted image to canvas
+                this.paste_createImage = function (source) {
+                    var pastedImage = new Image();
+                    pastedImage.onload = function () {
+                        if (autoresize == true) {
+                            //resize
+                            canvas.width = pastedImage.width;
+                            canvas.height = pastedImage.height;
+                        }
+                        else {
+                            //clear canvas
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        }
+                        ctx.drawImage(pastedImage, 0, 0);
+                    };
+                    pastedImage.src = source;
+                };
+            }
+            var CLIPBOARD = new CLIPBOARD_CLASS("my_canvas", true);
+            //forms
+            new DataTable('#RequestsTable', {
+                paging: true,
+                columnDefs: [
+                    {
+                        targets: 0, searchable: false, orderable: false,
+                    },
+                    {   type: 'month/year', targets: 1 }
+                ],
+                order: [1],
+            });
+
+            function getAssessments() {
+                $.ajax({
+                    url: "@Url.Action("GetAssessments", "Organization")",
+                    type: "get",
+                    dataType: "json",
+                    data: {
+                        organizationID: @Model.OrganizationDetails.Organization.OrganizationID,
+                    },
+                    success: function (data) {
+                        buildAssessmentsTable(data)
+                    }
+                });
+            }
+
+            function buildAssessmentsTable(dataSet) {
+                new DataTable('#AssessmentsTable', {
+                    responsive: false,
+                    autoWidth: false,
+                    destroy: true,
+                    data: dataSet,
+                    paging: true,
+                    columns: [
+                        {
+                            data: null,
+                            render: function (data, type, row) {
+                                @if (Model.MenuPermissions.HasEditPermissions)
+                                {
+                                    var retVal = @$"`<button type='button' class='align-middle text-center btn btn-primary' id='editAssessmentBtn' data-AssessmentID='${{ data.assessmentID }}' data-OrganizationID='${{ data.organizationID }}' data-Strategy='${{ data.strategy }}' data-Governance='${{ data.governance }}' data-Leadership='${{ data.leadership }}' data-Donations='${{ data.donations }}' data-Financials='${{ data.financials }}' data-Impact='${{ data.impact }}' data-notes='${{ data.notes }}' data-LastChangeUser='${{ data.lastChangeUser }}' data-LastChangeDttm='${{ data.lastChangeDttm }}'> <i class='fa fa-edit'></i></button><button type='button' class='btn btn-danger mx-1 deleteAssessment' data-AssessmentID='${{ data.assessmentID }}'><i class='fa fa-trash'></i></button>`";
+                                    <text>
+                                    return @Html.Raw(retVal);
+                                    </text>
+
+                                }
+                                return ""
+                            }
+                        },
+                        {
+                            data: "strategy"
+                        },
+                        {
+                            data: "governance",
+                        },
+                        {
+                            data: "leadership",
+                        },
+                        {
+                            data: "donations",
+                        },
+                        {
+                            data: "financials",
+                        },
+                        {
+                            data: "impact",
+                        },
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0, searchable: false, orderable: false,
+                        },
+                    ],
+                    order: [1],
+                });
+            }
+
+            $("#assessments-tab").on("click", function () {
+                getAssessments();
+            })
+
+            $("#tab-Assessments-body").on("click", "#editAssessmentBtn", function () {
+                $("#OrganizationDetails_Assessment_AssessmentID").val($(this).data("assessmentid"));
+                $("#OrganizationDetails_Assessment_Strategy").val($(this).data("strategy"));
+                $("#OrganizationDetails_Assessment_Governance").val($(this).data("governance"));
+                $("#OrganizationDetails_Assessment_Leadership").val($(this).data("leadership"));
+                $("#OrganizationDetails_Assessment_Donations").val($(this).data("donations"));
+                $("#OrganizationDetails_Assessment_Financials").val($(this).data("financials"));
+                $("#OrganizationDetails_Assessment_Impact").val($(this).data("impact"));
+                $("#OrganizationDetails_Assessment_Notes").val($(this).data("notes"));
+                $("#OrganizationDetails_Assessment_LastChangeUser").val($(this).data("lastchangeuser"));
+                $("#addEditAssessmentModal").modal("show");
+            });
+
+            $("#addEditAssessmentBtn").on("click", function () {
+                $("#addEditAssessmentModal").modal("show");
+            });
+
+            $("#tab-Assessments-body").on("click", ".deleteAssessment", function () {
+                request.deleteElement("@Url.Action("SaveOrganizationDetails", "Organization")", $(this).data("assessmentid"), 'OrganizationDetails','Assessment')
+            });
+
+
+            $("#addEditAssessmentModal").on("hidden.bs.modal", function () {
+                $("#OrganizationDetails_Assessment_AssessmentID").val(0)
+                $("#OrganizationDetails_Assessment_Strategy").val('')
+                $("#OrganizationDetails_Assessment_Governance").val('')
+                $("#OrganizationDetails_Assessment_Leadership").val('')
+                $("#OrganizationDetails_Assessment_Donations").val('')
+                $("#OrganizationDetails_Assessment_Financials").val('')
+                $("#OrganizationDetails_Assessment_Impact").val('')
+                $("#OrganizationDetails_Assessment_Notes").val('')
+            });
+
+            $("#saveAssessmentBtn").on("click", function () {
+                $("#OrganizationDetails_SaveAssessment").val(true);
+                request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true);
+            });
+
+
+            function getFinancials() {
+                $.ajax({
+                    url: "@Url.Action("GetFinancials", "Organization")",
+                    type: "get",
+                    dataType: "json",
+                    data: {
+                        organizationID: @Model.OrganizationDetails.Organization.OrganizationID,
+                    },
+                    success: function (data) {
+                        buildFinancialsTable(data)
+                    }
+                });
+            }
+
+            function buildFinancialsTable(dataSet) {
+                new DataTable('#FinancialsTable', {
+                    responsive: false,
+                    autoWidth: false,
+                    destroy: true,
+                    data: dataSet,
+                    paging: true,
+                    columns: [
+                        {
+                            data: null,
+                            render: function (data, type, row) {
+                                @if (Model.MenuPermissions.HasEditPermissions)
+                                {
+                                    var retVal = @$"`<button type='button' class='align-middle text-center btn btn-primary' id='editFinancialInformationBtn' data-FinancialInformationID='${{ data.financialInformationID }}' data-OrganizationID='${{ data.organizationID }} ' data-FiscalYear='${{ data.fiscalYear }}' data-Revenue='${{ data.revenue }}' data-programs='${{ data.programs }}' data-Administration='${{ data.administration }}' data-Fundraising='${{ data.fundraising }}' data-Liabilities='${{ data.liabilities }}' data-TotalExpenses='${{ data.totalExpenses }}' data-Cash='${{ data.cash }}' data-Cash='${{ data.cash }}' data-Notes='${{ data.notes }}' data-LastChangeUser='${{ data.lastChangeUser }}' data-LastChangeDttm='${{ data.lastChangeDttm }}'> <i class='fa fa-edit'></i></button><button type='button' class='btn btn-danger mx-1 deleteFinancialInformation' data-FinancialInformationID='${{ data.financialInformationID }}'><i class='fa fa-trash'></i></button>`";
+                                    <text>
+                                    return @Html.Raw(retVal);
+                                    </text>
+
+                                }
+                                return ""
+                            }
+                        },
+                        { data: "fiscalYear" },
+                        {
+                            data: "revenue",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency:'USD' })}<br/>(${row.revenueGrowthPercent}% Revenue Growth)`;
+                            }
+                        },
+                        {
+                            data: "programs",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.programsPercent}% of Revenue)`;
+                            }
+                        },
+                        {
+                            data: "administration",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.administrationPercent}% of Revenue)`;
+                            }
+                        },
+                        {
+                            data: "fundraising",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.fundraisingPercent}% of Revenue)`;
+                            }
+                        },
+                        {
+                            data: "liabilities",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.liabilitiesPercent}% of Revenue)`;
+                            }
+                        },
+                        {
+                            data: "totalExpenses",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.totalExpensesPercent}% of Revenue)`;
+                            }
+                        },
+                        {
+                            data: "cash",
+                            render: (data, type, row) => {
+                                return `${data.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}<br/>(${row.cashPercent}% of Expenses)`;
+                            }
+                        },
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0, searchable: false, orderable: false,
+                        },
+                    ],
+                    order: [1],
+                });
+            }
+
+            function getContacts() {
+                $.ajax({
+                    url: "@Url.Action("GetContacts", "Organization")",
+                    type: "get",
+                    dataType: "json",
+                    data: {
+                        organizationID: @Model.OrganizationDetails.Organization.OrganizationID,
+                    },
+                    success: function (data) {
+                        buildContactsTable(data)
+                    }
+                });
+            }
+
+            function buildContactsTable(dataSet) {
+                new DataTable('#ContactsTable', {
+                    responsive: false,
+                    autoWidth: false,
+                    destroy: true,
+                    data: dataSet,
+                    paging: true,
+                    columns: [
+                        {
+                            data: null,
+                            render: function (data, type, row) {
+                                @if (Model.MenuPermissions.HasEditPermissions)
+                                {
+                                    var retVal = @$"`<button type='button' class='align-middle text-center btn btn-primary' id='editContactBtn' data-ContactID='${{ data.contactID }}' data-OrganizationID='${{ data.organizationID }} ' data-ContactName='${{ data.contactName }}' data-Email='${{ data.email }}' data-Cell='${{ data.cell }}' data-Office='${{ data.office }}' data-ContactTypeID='${{ data.contactTypeID }}' data-ContactNotes='${{ data.contactNotes }}' data-LastChangeUser='${{ data.lastChangeUser }}' data-LastChangeDttm='${{ data.lastChangeDttm }}'> <i class='fa fa-edit'></i></button><button type='button' class='btn btn-danger mx-1 deleteContact' data-ContactID='${{ data.contactID }}'><i class='fa fa-trash'></i></button>`";
+                                    <text>
+                                    return @Html.Raw(retVal);
+                                    </text>
+
+                                }
+                                return ""
+                            }
+                        },
+                        { data: "contactName" },
+                        { data: "email" },
+                        { data: "cell" },
+                        { data: "contactTypeName" },
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0, searchable: false, orderable: false,
+                        },
+                    ],
+                    order: [1],
+                });
+            }
+            $("#financials-tab").on("click", function () {
+                getFinancials();
+            })
+
+            $("#tab-Financials-body").on("click", "#editFinancialInformationBtn", function () {
+                $("#OrganizationDetails_FinancialInformation_FinancialInformationID").val($(this).data("financialinformationid"));
+                $("#OrganizationDetails_FinancialInformation_FiscalYear").val($(this).data("fiscalyear"));
+                $("#OrganizationDetails_FinancialInformation_Revenue").val($(this).data("revenue"));
+                $("#OrganizationDetails_FinancialInformation_Programs").val($(this).data("programs"));
+                $("#OrganizationDetails_FinancialInformation_Administration").val($(this).data("administration"));
+                $("#OrganizationDetails_FinancialInformation_Fundraising").val($(this).data("fundraising"));
+                $("#OrganizationDetails_FinancialInformation_Liabilities").val($(this).data("liabilities"));
+                $("#OrganizationDetails_FinancialInformation_TotalExpenses").val($(this).data("totalexpenses"));
+                $("#OrganizationDetails_FinancialInformation_Cash").val($(this).data("cash"));
+                $("#OrganizationDetails_FinancialInformation_Notes").val($(this).data("notes"));
+                $("#OrganizationDetails_FinancialInformation_LastChangeUser").val($(this).data("lastchangeuser"));
+                $("#OrganizationDetails_FinancialInformation_LastChangeDttm").val($(this).data("lastchangedttm"));
+                $("#addEditFinancialInformationModal").modal("show");
+            });
+
+            $("#addEditFinancialsBtn").on("click", function () {
+                $("#addEditFinancialInformationModal").modal("show");
+            });
+
+            $("#tab-Financials-body").on("click", ".deleteFinancialInformation", function () {
+                request.deleteElement("@Url.Action("SaveOrganizationDetails", "Organization")", $(this).data("financialinformationid"), 'OrganizationDetails','FinancialInformation')
+            });
+
+
+            $("#addEditFinancialInformationModal").on("hidden.bs.modal", function () {
+                $("#OrganizationDetails_FinancialInformation_FinancialInformationID").val(0);
+                $("#OrganizationDetails_FinancialInformation_Revenue").val(0);
+                $("#OrganizationDetails_FinancialInformation_Programs").val(0);
+                $("#OrganizationDetails_FinancialInformation_Administration").val(0);
+                $("#OrganizationDetails_FinancialInformation_Fundraising").val(0);
+                $("#OrganizationDetails_FinancialInformation_Liabilties").val(0);
+                $("#OrganizationDetails_FinancialInformation_TotalExpenses").val(0);
+                $("#OrganizationDetails_FinancialInformation_Cash").val(0);
+                $("#OrganizationDetails_FinancialInformation_Notes").val(null);
+                $("#OrganizationDetails_FinancialInformation_LastChangeUser").val(null);
+                $("#OrganizationDetails_FinancialInformation_LastChangeDttm").val(null);
+            });
+
+            $("#saveFinancialInformationBtn").on("click", function () {
+                $("#OrganizationDetails_SaveFinancialInformation").val(true);
+                request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true);
+            });
+
+            $("#contacts-tab").on("click", function () {
+                getContacts();
+            })
+            var Generic = { hideSelected: true };
+
+            new TomSelect(".select_regions", {
+                create: false,
+                plugins: {
+                    remove_button: {
+                        title: 'Remove this item',
+                    },
+                    'input_autogrow': {},
+                },
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                }
+            });
+            //new TomSelect('.CountryID', { searchField: ['text', 'label'], plugins: ['dropdown_input'], });
+            new TomSelect('.Organization_CategoryID', Generic);
+            // load page
+            const CategoryOtherID = @Model.CategoryOtherID;
+            const ProjectTypeOtherID = @Model.ProjectTypeOtherID;
+            loadPage();
+
+            try {
+                new TomSelect('.PartnerTypeID', Generic);
+                var Request_ProjectTypeID = new TomSelect('.Request_ProjectTypeID', Generic);
+                var StatusID = new TomSelect('.StatusID', Generic);
+                var ContactTypeID = new TomSelect('.ContactTypeID', Generic);
+
+                var date = flatpickr("#OrganizationDetails_RequestDate", {
+                    allowInput: true,
+                    plugins: [
+                        monthSelectPlugin({
+                            dateFormat: "m/Y",
+                        })
+                    ],
+                });
+            }
+            catch { }
+
+            //globals
+            var ProjectTypeOther = document.getElementById("ProjectTypeOtherRequestRow");
+            var CategoryOther = document.getElementById("CategoryOtherOrganizationRow");
+
+            //functions
+            function checkOtherBoxes() {
+                if ($("#OrganizationDetails_Organization_CategoryID").val() != CategoryOtherID) {
+                    $("#OrganizationDetails_Organization_CategoryOther").val(null)
+                }
+                if ($("#OrganizationDetails_Request_ProjectTypeID").val() != ProjectTypeOtherID) {
+                    $("#OrganizationDetails_Request_ProjectTypeOther").val(null)
+                }
+            }
+
+
+            //event handlers
+            $("#ContentServer").on("click", function () {
+                var organizationURL = '@Model.ContentServerFolderURL'
+                checkOtherBoxes();
+                if ($("#OrganizationDetails_Organization_CSFolderId").val() > 0) {
+                    $("#OrganizationDetails_ContentServer").val(false);
+                    organizationURL = organizationURL.replace('{0}', $("#OrganizationDetails_Organization_CSFolderId").val());
+                    organizationURL = organizationURL.replaceAll('amp;', '');
+                    window.open(decodeURI(organizationURL));
+                } else {
+                    $("#OrganizationDetails_ContentServer").val(true);
+                    request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")");
+                }
+            });
+
+            $("#tab-Contacts-body").on("click", "#editContactBtn", function () {
+                $("#OrganizationDetails_Contact_ContactID").val($(this).data("contactid"));
+                $("#OrganizationDetails_Contact_ContactName").val($(this).data("contactname"));
+                $("#OrganizationDetails_Contact_OrganizationID").val($(this).data("organizationid"));
+                $("#OrganizationDetails_Contact_Email").val($(this).data("email"));
+                $("#OrganizationDetails_Contact_Cell").val($(this).data("cell"));
+                $("#OrganizationDetails_Contact_Office").val($(this).data("office"));
+                $("#OrganizationDetails_Contact_ContactTypeID").val($(this).data("contacttypeid"))
+                $("#OrganizationDetails_Contact_ContactNotes").val($(this).data("contactnotes"));
+                $("#addEditContactModal").modal("show");
+            });
+
+            $("#tab-Contacts-body").on("click", ".deleteContact", function () {
+                request.deleteElement("@Url.Action("SaveOrganizationDetails", "Organization")", $(this).data("contactid"), 'OrganizationDetails','Contact')
+            });
+
+            $("#addEditContactBtn").on("click", function () {
+                $("#OrganizationDetails_Contact_ContactID").val(0)
+                $("#OrganizationDetails_Contact_OrganizationID").val($(this).data("organizationid"));
+                $("#OrganizationDetails_Contact_ContactName").val(null)
+                $("#OrganizationDetails_Contact_Email").val(null)
+                $("#OrganizationDetails_Contact_Cell").val(null)
+                $("#OrganizationDetails_Contact_Office").val(null)
+                $("#OrganizationDetails_Contact_ContactTypeID").val(0)
+                $("#OrganizationDetails_Contact_ContactNotes").val(null)
+                $("#addEditContactModal").modal("show");
+            });
+
+            $("#addEditContactModal").on("hidden.bs.modal", function () {
+                $("#OrganizationDetails_Contact_ContactID").val(0);
+                $("#OrganizationDetails_Contact_ContactName").val(null);
+                $("#OrganizationDetails_Contact_Email").val(null);
+                $("#OrganizationDetails_Contact_Cell").val(null);
+                $("#OrganizationDetails_Contact_Office").val(null);
+                $("#OrganizationDetails_Contact_ContactTypeID").val(0);
+                $("#OrganizationDetails_Contact_ContactNotes").val(null);
+                document.getElementById('lastChangedContact').style.display = "none";
+                //ContactTypeID.sync();
+                $(".field-validation-error").empty();
+            });
+
+          $("#tab-Requests-body").on("click", "#deleteRequestBtn", function () {
+                $("#OrganizationDetails_Request_RequestID").val($(this).data("requestid"));
+                $("#OrganizationDetails_ForDeletion").val(true);
+                $("#OrganizationDetails_SaveRequest").val(true);
+                $("#deleteModal .modal-title").text("Delete Request")
+                $("#deleteModal .modal-body").text("Are you sure you want to permanently delete this request?");
+                $("#deleteModal").modal("show")
+            });
+
+            $("#saveContactBtn").on("click", function () {
+                $("#OrganizationDetails_SaveContact").val(true);
+                request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true);
+            });
+
+            $("#saveRequestBtn").on("click", function () {
+                $("#OrganizationDetails_SaveRequest").val(true);
+                request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true);
+            });
+
+            function getAddresses() {
+                $.ajax({
+                    url: "@Url.Action("GetAddresses", "Organization")",
+                    type: "get",
+                    dataType: "json",
+                    data: {
+                        organizationID: @Model.OrganizationDetails.Organization.OrganizationID,
+                    },
+                    success: function (data) {
+                        buildAddressesTable(data)
+                    }
+                });
+            }
+
+            function buildAddressesTable(dataSet) {
+                new DataTable('#AddressesTable', {
+                    responsive: false,
+                    autoWidth: false,
+                    destroy: true,
+                    data: dataSet,
+                    paging: true,
+                    columns: [
+                        {
+                            data: null,
+                            render: function (data, type, row) {
+                                @if (Model.MenuPermissions.HasEditPermissions)
+                                {
+                                    var retVal = @$"`<button type='button' class='btn btn-primary' id='editAddressBtn' data-AddressID='${{data.addressID}}' data-OrganizationID='${{data.organizationID}}' data-AttnLine='${{data.attnLine}}' data-Address1='${{data.address1}}' data-Address2='${{data.address2}}' data-City='${{data.city}}' data-State='${{data.state}}' data-ZipCode='${{data.zipCode}}' data-CountryID='${{data.countryID}}' data-Active='${{data.active}}' data-LastChangeUser='${{data.lastChangeUser}}' data-LastChangeDttm='${{data.lastChangeDttm}}'> <i class='fa fa-edit'></i> </button><button type='button' class='btn btn-danger mx-1 deleteAddress' data-AddressID='${{ data.addressID }}'><i class='fa fa-trash'></i></button>`";
+                                    <text>
+                                    return @Html.Raw(retVal);
+                                    </text>
+
+                                }
+                                return "";
+                            }
+                        },
+                        { data: "attnLine" },
+                        { data: "address1" },
+                        { data: "address2" },
+                        { data: "city" },
+                        { data: "state" },
+                        { data: "zipCode" },
+                        { data: "countryName" },
+                        {
+                            data: null,
+                            render: function(data) {
+                                return data.active == true ? "Active" : "Inactive";
+                            }
+                        },
+                        { data: "lastChangeUser" },
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0, searchable: false, orderable: false,
+                        },
+                    ],
+                    order: [1],
+                });
+            }
+
+            $("#addresses-tab").on("click", function () {
+                getAddresses();
+            })
+
+            $("#tab-Addresses-body").on("click", "#editAddressBtn", function () {
+                $("#OrganizationDetails_Address_AttnLine").val($(this).data("attnline"));
+                $("#OrganizationDetails_Address_AddressID").val($(this).data("addressid"));
+                $("#OrganizationDetails_Address_Address1").val($(this).data("address1"));
+                $("#OrganizationDetails_Address_Address2").val($(this).data("address2"));
+                $("#OrganizationDetails_Address_AttnLine").val($(this).data("attnline"));
+                $("#OrganizationDetails_Address_City").val($(this).data("city"));
+                $("#OrganizationDetails_Address_State").val($(this).data("state"));
+                $("#OrganizationDetails_Address_ZipCode").val($(this).data("zipcode"));
+                $("#OrganizationDetails_Address_CountryID").val($(this).data("countryid"));
+                $("#OrganizationDetails_Address_Active").prop("checked", $(this).data("active"));
+                $("#OrganizationDetails_Address_Active").val( $(this).data("active"));
+                $("#OrganizationDetails_Address_LastChangeUser").val($(this).data("lastchangeuser"));
+                $("#addEditAddressModal").modal("show");
+            });
+
+            $("#addEditAddressBtn").on("click", function () {
+                $("#addEditAddressModal").modal("show");
+            });
+
+            $("#tab-Addresses-body").on("click", ".deleteAddress", function () {
+                request.deleteElement("@Url.Action("SaveOrganizationDetails", "Organization")", $(this).data("addressid"), 'OrganizationDetails','Address')
+            });
+
+            $("#addEditAddressModal").on("hidden.bs.modal", function () {
+                $("#OrganizationDetails_Address_AddressID").val(0);
+                $("#OrganizationDetails_Address_Address1").val(null);
+                $("#OrganizationDetails_Address_Address2").val(null);
+                $("#OrganizationDetails_Address_AttnLine").val(null);
+                $("#OrganizationDetails_Address_City").val(null);
+                $("#OrganizationDetails_Address_State").val(null);
+                $("#OrganizationDetails_Address_ZipCode").val(null);
+                $("#OrganizationDetails_Address_CountryID").val(0);
+            });
+
+            $("#saveAddressBtn").on("click", function () {
+                $("#OrganizationDetails_SaveAddress").val(true);
+                request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true);
+            });
+
+        @if (Model.RequestID != 0 && Model.GiftID == 0)
+        {
+            <text>
+                request.loadRequestPartial('@Url.Action("RequestFormPartial", "Organization", new { requestID = Model.RequestID, organizationID = Model.OrganizationDetails.Organization.OrganizationID})')
+            </text>
+        } else if (Model.GiftID != 0)
+        {
+            <text>
+                request.loadGiftPartial('@Url.Action("LoadGiftPartial", "Organization", new { giftID = Model.GiftID, requestID = Model.RequestID, organizationID = Model.OrganizationDetails.Organization.OrganizationID })', @Model.OrganizationDetails.RequestID)
+            </text>
+        }
+
+        @if (Model.AddressID != 0)
+        {
+            <text>
+            $("#addresses-tab").click()
+            </text>
+        }
+        @if (Model.ContactID != 0)
+        {
+            <text>
+            $("#contacts-tab").click();
+            </text>
+        }
+        @if (Model.FinancialInformationID != 0)
+        {
+            <text>
+            $("#financials-tab").click();
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <text>
+                    $(".error-message").modal("show");
+            </text>
+        }
+        request.setOrgForm();
+        })
+    </script>
+    @if (!Model.MenuPermissions.HasEditPermissions)
+    {
+        <script>
+            $(document).keydown(function (objEvent) {
+                if (objEvent.keyCode == 9) {
+                    objEvent.preventDefault();
+                }
+            })
+        </script>
+        <style>
+            label {
+                pointer-events: none;
+            }
+
+            .ts-control {
+                pointer-events: none;
+            }
+        </style>
+    }
+
+}
+*@
+
+<div class="toast-container top-0 end-0 p-3"></div>
+
+<div class="row">
+    <div class="col-xl-3 col-lg-4">
+        <form asp-controller="Organization" asp-action="SaveRequestDetail" method="post" id="requestDetailForm"></form>
+        <form asp-controller="Organization" asp-action="SaveGiftDetail" method="post" id="giftDetailForm"></form>
+        <form asp-controller="Organization" asp-action="SaveAssessment" method="post" id="assessmentForm" style="display: none;">
+            <input type="hidden" id="assessmentID" name="AssessmentID" />
+            <input type="hidden" id="assessmentOrganizationID" name="OrganizationID" />
+            <input type="hidden" id="assessmentRequestID" name="RequestID" />
+            <input type="hidden" id="assessmentNotes" name="Notes" />
+            <div id="scoresContainer"></div>
+        </form>
+        @using (Html.BeginForm("SaveOrganizationDetails", "Organization", FormMethod.Post, new { id = "newOrganizationDetailsForm", enctype = "multipart/form-data" }))
+        {
+            @Html.HiddenFor(m => m.OrganizationDetails.Organization.LastChangeDttm)
+            @Html.HiddenFor(m => m.OrganizationDetails.Address.AddressID)
+            @Html.HiddenFor(m => m.OrganizationDetails.SaveAddress)
+            @Html.HiddenFor(m => m.OrganizationDetails.Request.OrganizationID)
+            @Html.HiddenFor(m => m.OrganizationDetails.Organization.OrganizationID)
+            @Html.HiddenFor(m => m.OrganizationDetails.SaveContact)
+            @Html.HiddenFor(m => m.OrganizationDetails.Contact.ContactID)
+            @Html.HiddenFor(m => m.OrganizationDetails.Contact.OrganizationID)
+            @Html.HiddenFor(m => m.OrganizationDetails.SaveRequest)
+            @Html.HiddenFor(m => m.OrganizationDetails.Request.RequestID)
+            @Html.HiddenFor(m => m.OrganizationDetails.ForDeletion)
+            @Html.HiddenFor(m => m.OrganizationDetails.ContentServer)
+            @Html.HiddenFor(m => m.OrganizationDetails.Organization.CSFolderId)
+            @Html.HiddenFor(m => m.OrganizationDetails.Organization.VersionStamp)
+            @Html.HiddenFor(m => m.OrganizationDetails.RequestID)
+            @Html.HiddenFor(m => m.OrganizationDetails.GiftID)
+            @Html.HiddenFor(m => m.OrganizationDetails.FinancialInformation.FinancialInformationID)
+            @Html.HiddenFor(m => m.OrganizationDetails.SaveFinancialInformation)
+            @Html.HiddenFor(m => m.OrganizationDetails.Assessment.AssessmentID)
+            @Html.HiddenFor(m => m.OrganizationDetails.SaveAssessment)
+            @Html.HiddenFor(m => m.OrganizationDetails.DeleteAddress)
+            @Html.HiddenFor(m => m.OrganizationDetails.Address.AddressID)
+            @Html.HiddenFor(m => m.OrganizationDetails.DeleteContact)
+            @Html.HiddenFor(m => m.OrganizationDetails.DeleteFinancialInformation)
+            @Html.HiddenFor(m => m.OrganizationDetails.DeleteAssessment)
+            @* Modals *@
+            <div class="modal fade" id="addEditContactModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog hidden" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Contact</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        @Html.HiddenFor(m => m.OrganizationDetails.Contact.OrganizationID)
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.ContactName, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Contact.ContactName, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.Contact.ContactName)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.Email, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Contact.Email, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.Cell, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Contact.Cell, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.Office, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Contact.Office, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.ContactTypeID, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.DropDownListFor(m => m.OrganizationDetails.Contact.ContactTypeID, Model.GetContactTypes(), "Select a contact type...", new { @class = "ts-control" })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.Contact.ContactTypeID)
+                                    </div>
+                                </div>
+                                <div class="mt-3"> </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Contact.ContactNotes, new { @class = "detailHeaderLabel pt-1 pb-0 px-2Notes" })
+                                    <div class="row">
+                                        @Html.TextAreaFor(m => m.OrganizationDetails.Contact.ContactNotes, new { @class = "ts-control", style = "height: 100px" })
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between" id="lastChangedContact" style="display:none;">
+                            <div class="row">
+                                <div class="col-5" id="OrganizationDetails_Contact_LastChangeUser"></div>
+                                <div class="col" id="OrganizationDetails_Contact_LastChangeDttm"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            @if (Model.MenuPermissions.HasEditPermissions)
+                            {
+                                <button type="button" class="btn btn-primary save" id="saveContactBtn">Save</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content text-center">
+                        <div class="modal-header">
+                            <h5 class="modal-title"></h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <p class="modal-body"></p>
+
+                        <div class="modal-footer">
+                            <input type="button" value="Yes" style="vertical-align:middle;" class="btn btn-danger float-center" @*onclick='request.saveOrganization("@Url.Action("SaveOrganizationDetails", "Organization")", true)'*@>
+                            <input type="button" value="No" style="vertical-align:middle;" class="btn btn-secondary float-center" data-bs-dismiss="modal">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="addEditAddressModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog hidden" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Address</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            @Html.HiddenFor(m => m.OrganizationDetails.Address.OrganizationID)
+                            <div class="row">
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.AttnLine, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.AttnLine, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.Address1, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.Address1, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.Address.Address1)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.Address2, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.Address2, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.City, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.City, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.State, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.State, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.ZipCode, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.ZipCode, new { htmlAttributes = new { @class = "ts-control" } })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.CountryID, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.DropDownListFor(m => m.OrganizationDetails.Address.CountryID, Model.GetCountries(), new { @class = "ts-control" })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.Address.CountryID)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Address.Active, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.Address.Active, new { @class = "ts-control" })
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between" id="lastChangedAddress" style="display:none;">
+                            <div class="row">
+                                <div class="col-5" id="OrganizationDetails_Address_LastChangeUser"></div>
+                                <div class="col" id="OrganizationDetails_Address_LastChangeDttm"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            @if (Model.MenuPermissions.HasEditPermissions)
+                            {
+                                <button type="button" class="btn btn-primary save" id="saveAddressBtn">Save</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="addEditFinancialInformationModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog modal-lg hidden" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Financial Information</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="row">
+                                    <div class="col">
+                                        @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.FiscalYear, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                        <div class="col">
+                                            @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.FiscalYear, new { htmlAttributes = new { @class = "ts-control" } })
+                                            @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.FiscalYear)
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.FiscalYearEnd, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                        <div class="col">
+                                            <span id="FiscalYearEnd"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Revenue, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Revenue, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Revenue)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Programs, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Programs, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Programs)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Administration, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Administration, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Administration)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Fundraising, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Fundraising, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Fundraising)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Liabilities, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Liabilities, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Liabilities)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.TotalExpenses, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.TotalExpenses, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.TotalExpenses)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Cash, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                    <div class="col">
+                                        @Html.EditorFor(m => m.OrganizationDetails.FinancialInformation.Cash, new { htmlAttributes = new { @class = "ts-control" } })
+                                        @Html.ValidationMessageFor(m => m.OrganizationDetails.FinancialInformation.Cash)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.FinancialInformation.Notes, new { @class = "detailHeaderLabel pt-1 pb-0 px-2Notes" })
+                                    <div class="row">
+                                        @Html.TextAreaFor(m => m.OrganizationDetails.FinancialInformation.Notes, new { @class = "ts-control", style = "height: 100px" })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @Html.Label("File")
+                                    <div class="row">
+                                        <input class="form-control" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" id="OrganizationDetails_FinancialInformation_FinancialDocument" type="file" asp-for="OrganizationDetails.FinancialInformation.FinancialDocument">
+                                    </div>
+                                </div>
+                                <div class="row my-2">
+                                    <div id="table-container">
+                                        <table class="table table-hover table-striped table-bordered mytablesOrg" id="FinancialDocumentsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>Document Name</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tab-FinancialDocuments-body" />
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between" id="lastChangedFinancialInformation" style="display:none;">
+                            <div class="row">
+                                <div class="col-5" id="OrganizationDetails_FinancialInformation_LastChangeUser"></div>
+                                <div class="col" id="OrganizationDetails_FinancialInformation_LastChangeDttm"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            @if (Model.MenuPermissions.HasEditPermissions)
+                            {
+                                <button type="button" class="btn btn-primary save" id="saveFinancialInformationBtn">Save</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @*
+        <div class="modal fade" id="addEditAssessmentModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog hidden" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title">Edit Assessment</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+        <div class="row">
+        <div class="row">
+        @foreach (var cat in Model.AssessmentCategories.Select((value, index) => new { Index = index, Value = value }))
+        {
+        <div class="row">
+        @if (cat.Index % 5 == 0)
+        {
+        <h1>@cat.Value.Header</h1>
+        }
+        <label><h5>@cat.Value.Category</h5></label>
+        <div class="col">
+        <input type="number" name="@cat.Value.Description" data-weight="@cat.Value.Weight" class="ts-control" />
+        </div>
+        </div>
+        }
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Strategy, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Strategy, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Strategy)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Governance, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Governance, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Governance)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Leadership, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Leadership, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Leadership)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Donations, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Donations, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Donations)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Financials, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Financials, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Financials)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Impact, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+        <div class="col">
+        @Html.EditorFor(m => m.OrganizationDetails.Assessment.Impact, new { htmlAttributes = new { @class = "ts-control" } })
+        @Html.ValidationMessageFor(m => m.OrganizationDetails.Assessment.Impact)
+        </div>
+        </div>
+        <div class="row">
+        @Html.LabelFor(m => m.OrganizationDetails.Assessment.Notes, new { @class = "detailHeaderLabel pt-1 pb-0 px-2Notes" })
+        <div class="row">
+        @Html.TextAreaFor(m => m.OrganizationDetails.Assessment.Notes, new { @class = "ts-control", style = "height: 100px" })
+        </div>
+        </div>
+        <div class="row">
+        @Html.Label("File")
+        <div class="row">
+        <input class="form-control" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" id="OrganizationDetails_Assessment_FinancialDocument" type="file" asp-for="OrganizationDetails.FinancialInformation.FinancialDocument">
+        </div>
+        </div>
+        </div>
+        </div>
+        <div class="modal-footer justify-content-between" id="lastChangedAssessment" style="display:none;">
+        <div class="row">
+        <div class="col-5" id="OrganizationDetails_Assessment_LastChangeUser"></div>
+        <div class="col" id="OrganizationDetails_Assessment_LastChangeDttm"></div>
+        </div>
+        </div>
+        <div class="modal-footer">
+        @if (Model.MenuPermissions.HasEditPermissions)
+        {
+        <button type="button" class="btn btn-primary save" id="saveAssessmentBtn">Save</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        }
+        else
+        {
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        }
+        </div>
+        </div>
+        </div>
+        </div>
+        *@
+            <div class="modal error-message" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Error</h5>
+                        </div>
+                        <div class="modal-body">
+                            <p id="error-message-p"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary close" data-dismiss="modal" onclick="$('.error-message').modal('hide')">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal success-message" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Success</h5>
+                        </div>
+                        <div class="modal-body">
+                            <p id="success-message-p"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary close" data-dismiss="modal" onclick="$('.success-message').modal('hide')">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-primary">
+                    <h5>
+                        Organization
+                    </h5>
+                </div>
+                <div class="card-body">
+
+                    @if (Model.OrganizationDetails.Organization.OrganizationLogo != null)
+                    {
+                        <div class="row">
+                            <div class="col">
+                                <div class='my-3'>
+                                    <div class="image-container">
+                                        <img src='data:image/BitMap;base64,@Convert.ToBase64String(Model.OrganizationDetails.Organization.OrganizationLogo)'>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Organization.OrganizationURL)
+                                    <div class="col">
+                                        <a id="companylink" href="@Model.OrganizationDetails.Organization.OrganizationURL" target="_blank" class="btn btn-link">
+                                            @Model.OrganizationDetails.Organization.OrganizationName
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.OrganizationName, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                @Html.EditorFor(m => m.OrganizationDetails.Organization.OrganizationName, new { htmlAttributes = new { @class = "ts-control" } })
+                                @Html.ValidationMessageFor(m => m.OrganizationDetails.Organization.OrganizationName)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col p-1">
+                            @Html.LabelFor(m => m.OrganizationDetails.Organization.CategoryID, new { @class = "detailHeaderLabel pt-1 pb-0" })
+                            @Html.DropDownListFor(m => m.OrganizationDetails.Organization.CategoryID, Model.GetCategories(), "Select a category...", new { @class = "Organization_CategoryID" })
+                            @Html.ValidationMessageFor(m => m.OrganizationDetails.Organization.CategoryID)
+                        </div>
+                        <div class="col p-1">
+                            @Html.LabelFor(m => m.OrganizationDetails.Organization.PartnerTypeID, new { @class = "detailHeaderLabel pt-1 pb-0" })
+                            @Html.DropDownListFor(m => m.OrganizationDetails.Organization.PartnerTypeID, Model.GetPartnerTypes(), "Select a partner type...", new { @class = "PartnerTypeID" })
+                            @Html.ValidationMessageFor(m => m.OrganizationDetails.Organization.PartnerTypeID)
+                        </div>
+                    </div>
+                    <div style="display:none" id="CategoryOtherOrganizationRow">
+                        <div class="row">
+                            @Html.LabelFor(m => m.OrganizationDetails.Organization.CategoryOther, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                            @Html.EditorFor(m => m.OrganizationDetails.Organization.CategoryOther, new { htmlAttributes = new { @class = "ts-control" } })
+                            @Html.ValidationMessageFor(m => m.OrganizationDetails.Organization.CategoryOther)
+                        </div>
+                    </div>
+                    <div class="row">
+                        @Html.LabelFor(m => m.OrganizationDetails.OrganizationRegions, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                        @Html.ListBoxFor(m => m.OrganizationDetails.OrganizationRegions, Model.GetRegions(), new { @class = "select_regions", @placeholder = "Select region(s)..." })
+                    </div>
+                    <div class="row">
+                        <div class="col py-2">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.Address1)
+                            </div>
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.Address1)
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.OrganizationDetails.Organization.Address2))
+                        {
+                            <div class="col py-2">
+                                <div class="row">
+                                    @Html.LabelFor(m => m.OrganizationDetails.Organization.Address2)
+                                </div>
+                                @Html.DisplayFor(m => m.OrganizationDetails.Organization.Address2)
+                            </div>
+                        }
+                    </div>
+                    <div class="row">
+                        <div class="col py-2">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.City)
+                            </div>
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.City)
+                        </div>
+                        <div class="col py-2">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.State)
+                            </div>
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.State)
+                        </div>
+                        <div class="col py-2">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.CountryName)
+                            </div>
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.CountryName)
+                        </div>
+                        <div class="col py-2">
+                            <div class="row">
+                                @Html.LabelFor(m => m.OrganizationDetails.Organization.ZipCode)
+                            </div>
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.ZipCode)
+                        </div>
+                    </div>
+                    <div class="row">
+                        @Html.LabelFor(m => m.OrganizationDetails.Organization.OrganizationURL, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                        @Html.EditorFor(m => m.OrganizationDetails.Organization.OrganizationURL, new { htmlAttributes = new { @class = "ts-control" } })
+                    </div>
+                    <div class="row">
+                        @Html.LabelFor(m => m.OrganizationDetails.Organization.OrganizationNotes, new { @class = "detailHeaderLabel pt-1 pb-0 px-2Notes" })
+                        @Html.TextAreaFor(m => m.OrganizationDetails.Organization.OrganizationNotes, new { @class = "ts-control", style = "height: 100px;" })
+                    </div>
+                    <div class="row my-3">
+                        @Html.LabelFor(m => m.OrganizationDetails.Organization.OrganizationLogo, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                        <div class="row">
+                            <input class="form-control" accept="image/svg,image/png,image/jpeg" id="OrganizationDetails_Organization_OrganizationLogo" type="file" asp-for="OrganizationDetails.Organization.OrganizationLogo">
+                            @Html.ValidationMessageFor(m => m.OrganizationDetails.Organization.OrganizationLogo)
+                            <canvas style="border:1px solid grey; display:none;" id="my_canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        @if (Model.MenuPermissions.HasEditPermissions)
+                        {
+                            <button type="button" class="btn btn-primary float-end save" style="min-width:60px" id="saveOrganizationBtn">Save</button>
+                        }
+                        @if (Model.OrganizationDetails.Organization.CategoryID != 0)
+                        {
+                            @if (Model.OrganizationDetails.Organization.CSFolderId > 0)
+                            {
+                                <button type="button" class="btn btn-info float-end me-1" style="min-width:60px;" id="ContentServer" title="Content Sever">
+                                    <i class="fa fa-folder-open"></i>
+                                </button>
+                            }
+                            else if (Model.MenuPermissions.HasEditPermissions)
+                            {
+                                <button type="button" class="btn btn-info float-end me-1" style="min-width:60px;" id="ContentServer" title="Content Sever">
+                                    <i class="fa fa-folder-plus"></i>
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+                @if (Model.OrganizationDetails.Organization.OrganizationID > 0)
+                {
+                    <div class="card-footer bg-transparent">
+                        @Html.LabelFor(m => m.OrganizationDetails.Organization.LastChangeUser, new { @class = "noHover" })
+                        @Html.DisplayFor(m => m.OrganizationDetails.Organization.LastChangeUser)
+                        <div class="float-end">
+                            @Html.LabelFor(m => m.OrganizationDetails.Organization.LastChangeDttm, new { @class = "noHover" })
+                            @Html.DisplayFor(m => m.OrganizationDetails.Organization.LastChangeDttm)
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    @if (Model.OrganizationDetails.Organization.OrganizationID > 0)
+    {
+        @* Tables *@
+        <div class="col-xl-9 col-lg-8">
+            <h5>
+                @Html.LabelFor(m => m.OrganizationDetails.Organization.TotalGifts): $@Html.DisplayFor(m => m.OrganizationDetails.Organization.TotalGifts)
+            </h5>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab" aria-controls="requests" aria-selected="true">Requests</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="contacts-tab" data-has-edit-permissions="@Model.MenuPermissions.HasEditPermissions.ToString().ToLower()" data-bs-toggle="tab" data-bs-target="#contacts" type="button" role="tab" aria-controls="contacts" aria-selected="false">Contacts</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="addresses-tab" data-has-edit-permissions="@Model.MenuPermissions.HasEditPermissions.ToString().ToLower()" data-bs-toggle="tab" data-bs-target="#addresses" type="button" role="tab" aria-controls="addresses" aria-selected="false">Addresses</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="financials-tab" data-has-edit-permissions="@Model.MenuPermissions.HasEditPermissions.ToString().ToLower()" data-bs-toggle="tab" data-bs-target="#financials" type="button" role="tab" aria-controls="financials" aria-selected="false">Financials</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="assessments-tab" data-has-edit-permissions="@Model.MenuPermissions.HasEditPermissions.ToString().ToLower()" data-bs-toggle="tab" data-bs-target="#assessments" type="button" role="tab" aria-controls="assessments" aria-selected="false">Assessments</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active card p-1" id="requests" role="tabpanel" aria-labelledby="requests-tab">
+                    <table class="table table-hover table-striped table-bordered mytablesOrg" id="RequestsTable" style="min-width: 100%;">
+                        <thead>
+                            <tr class="align-middle">
+                                <th class="text-center">
+                                    @if (Model.MenuPermissions.HasEditPermissions)
+                                    {
+                                        <button type="button" id="addEditRequestBtn" class="btn btn-success" data-OrganizationID="@Model.OrganizationDetails.Organization.OrganizationID"
+                                        @*onclick="request.loadRequestPartial('@Url.Action("RequestFormPartial", "Organization", new { requestID = 0, organizationID = Model.OrganizationDetails.Organization.OrganizationID})')"*@>
+                                            <!--onclick="request.showRequestModal()" --><i class="fa fa-plus-circle"></i>
+                                        </button>
+                                    }
+                                </th>
+                                <th>Vote Month/Year</th>
+                                <th>Project Type</th>
+                                <th>Status</th>
+                                <th>Disbursement Range</th>
+                                <th>Vote Team</th>
+                                <th>Approved Gift Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-Requests-body">
+                            @foreach (var R in Model.OrganizationDetails.Requests)
+                            {
+                                <tr class="align-middle">
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-primary loadRequestPartial"
+                                                id="loadRequestPartial"
+                                                data-RequestId="@R.RequestID"
+                                        @*onclick="request.loadRequestPartial('@Url.Action("RequestFormPartial", "Organization", new { requestID = R.RequestID })')"*@>
+                                            <i class="fa fa-pencil"></i>
+                                        </button>
+                                        @if (Model.MenuPermissions.HasEditPermissions && R.GiftCount < 1)
+                                        {
+                                            <button type="button" class="btn btn-danger delete-request-btn"
+                                                    data-RequestId="@R.RequestID">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                    <td>
+                                        @R.VoteDate.Month.ToString()/@R.VoteDate.Year.ToString()
+                                    </td>
+                                    <td>
+                                        @Model.ProjectType.First(x => x.ProjectTypeId == R.ProjectTypeID).ProjectTypeName
+                                    </td>
+                                    <td>
+                                        @Model.RequestStatuses.First(x => x.RequestStatusID == R.RequestStatusID).RequestStatusName
+                                    </td>
+                                    <td>@R.DisbursementRange</td>
+                                    <td>@R.VoteTeamName</td>
+                                    <td>@R.ApprovedGiftAmount.ToString("C0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane fade card p-1" id="contacts" role="tabpanel" aria-labelledby="contacts-tab">
+                    <table class="table table-hover table-striped table-bordered mytablesOrg" id="ContactsTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    @if (Model.MenuPermissions.HasEditPermissions)
+                                    {
+                                        <button type="button" id="addEditContactBtn" class="btn btn-success" data-OrganizationID="@Model.OrganizationDetails.Organization.OrganizationID"><i class="fa fa-plus-circle"></i> </button>
+                                    }
+
+                                </th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Cell</th>
+                                <th>Contact Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-Contacts-body" />
+                    </table>
+                </div>
+                <div class="tab-pane fade card p-1" id="addresses" role="tabpanel" aria-labelledby="addresses-tab">
+                    <table class="table table-hover table-striped table-bordered mytablesOrg" id="AddressesTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    @if (Model.MenuPermissions.HasEditPermissions)
+                                    {
+                                        <button type="button" id="addEditAddressBtn" class="btn btn-success" data-OrganizationID="@Model.OrganizationDetails.Organization.OrganizationID"><i class="fa fa-plus-circle"></i> </button>
+                                    }
+                                </th>
+                                <th>Attn Line</th>
+                                <th>Address</th>
+                                <th>Address2</th>
+                                <th>City</th>
+                                <th>State</th>
+                                <th>ZipCode</th>
+                                <th>Country Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-Addresses-body" />
+                    </table>
+                </div>
+                <div class="tab-pane fade card p-1" id="financials" role="tabpanel" aria-labelledby="financials-tab">
+                    <table class="table table-hover table-striped table-bordered mytablesOrg" id="FinancialsTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    @if (Model.MenuPermissions.HasEditPermissions)
+                                    {
+                                        <button type="button" id="addEditFinancialInformationBtn" class="btn btn-success" data-OrganizationID="@Model.OrganizationDetails.Organization.OrganizationID"><i class="fa fa-plus-circle"></i> </button>
+                                    }
+                                </th>
+                                <th>Fiscal Year</th>
+                                <th>Revenue</th>
+                                <th>Programs</th>
+                                <th>Administration</th>
+                                <th>Fundraising</th>
+                                <th>Liabilities</th>
+                                <th>Total Expenses</th>
+                                <th>Cash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-Financials-body" />
+                    </table>
+                </div>
+                <div class="tab-pane fade card p-1" id="assessments" role="tabpanel" aria-labelledby="assessments-tab">
+                    <div id="assessment-table-view">
+                        <table id="AssessmentsTable" class="table table-hover table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        @{
+                                            var hasValidAssessment = false;
+                                            var curDate = DateTime.Today;
+                                            foreach (var r in Model.OrganizationDetails.Requests)
+                                            {
+                                                if (r.VoteDate >= curDate)
+                                                {
+                                                    hasValidAssessment = true;
+                                                    break;
+                                                }
+                                            }
+
+                                            if (Model.MenuPermissions.HasEditPermissions && hasValidAssessment)
+                                            {
+                                                <button type="button" id="addAssessmentBtn" class="btn btn-success">
+                                                    <i class="fa fa-plus-circle"></i>
+                                                </button>
+                                            }
+                                        }
+                                    </th>
+                                    <th>Vote Date</th>
+                                    <th>Score</th>
+                                    <th>Last Changed By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tab-Assessments-body" />
+                        </table>
+                    </div>
+                    <div id="assessment-form-view" style="display: none;">
+                        <div id="assessment-form-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

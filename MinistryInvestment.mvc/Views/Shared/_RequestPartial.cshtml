@@ -1,0 +1,198 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.RequestPartialViewModel
+@using MinistryInvestment.Core.Models
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a class="btn btn-link p-0 m-0 back-to-org-list" id="back-to-org-list" data-organization-id="@Model.RequestDetail.Request.OrganizationID">Back to Request List</a>
+        </li>
+    </ol>
+</nav>
+
+@Html.HiddenFor(m => m.RequestDetail.SaveRequest, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.SaveGift, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Request.RequestID, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Request.OrganizationID, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Request.PartnerTypeID, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Request.CSFolderId, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Request.OrganizationName, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.DeleteGift, new { form = "requestDetailForm" })
+@Html.HiddenFor(m => m.RequestDetail.Gift.GiftID, new { form = "requestDetailForm" })
+@*This should be the area that contains all of the editable information for a specific request (RequestID)*@
+<div class="row">
+    <div class="col-xl-7 col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>
+                    @if (Model.RequestDetail.Request.VoteDate.Year.ToString() != "1")
+                    {
+                        <text>
+                            Editing Request: @Model.RequestDetail.Request.VoteDate.Month.ToString()/@Model.RequestDetail.Request.VoteDate.Year.ToString()
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                            New Request
+                        </text>
+                    }
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row" id="RequestContainer">
+                    <div class="row">
+                        <div class="col">
+                            @Html.LabelFor(m => m.RequestDetail.Request.VoteDate)
+                            <div class="col">
+                                @Html.EditorFor(m => m.RequestDetail.Request.VoteDate, new { htmlAttributes = new { @class = "ts-control", placeholder = "Select a date...", form = "requestDetailForm" } })
+                                @Html.ValidationMessageFor(m => m.RequestDetail.Request.VoteDate)
+                            </div>
+                        </div>
+                        <div class="col">
+                            @Html.LabelFor(m => m.RequestDetail.Request.RequestedAmount)
+                            <div class="col">
+                                @Html.EditorFor(m => m.RequestDetail.Request.RequestedAmount, new { htmlAttributes = new { @class = "ts-control", form = "requestDetailForm" } })
+                                @Html.ValidationMessageFor(m => m.RequestDetail.Request.RequestedAmount)
+                            </div>
+                        </div>
+                        <div class="col">
+                            @Html.LabelFor(m => m.RequestDetail.Request.VoteTeamID)
+                            <div class="col">
+                                @Html.DropDownListFor(m => m.RequestDetail.Request.VoteTeamID, Model.GetVoteTeams(), new { @class = "ts-control", form = "requestDetailForm" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            @Html.LabelFor(m => m.RequestDetail.Request.ProjectTypeID)
+                            <div class="col">
+                                @Html.DropDownListFor(m => m.RequestDetail.Request.ProjectTypeID, Model.GetProjectTypes(), new { @class = "ts-control", form = "requestDetailForm", onchange = "request.toggleProjectTypeOther()" })
+                            </div>
+                        </div>
+                        @{
+                            var display = "d-none";
+                        }
+                        @if (Model.RequestDetail.Request.ProjectTypeName == "Other")
+                        {
+                            display = "";
+                        }
+                        <div id="ProjectTypeOther" class="col @display">
+                            @Html.LabelFor(m => m.RequestDetail.Request.ProjectTypeOther)
+                            <div class="col">
+                                @Html.EditorFor(m => m.RequestDetail.Request.ProjectTypeOther, new { htmlAttributes = new { @class = "ts-control", form = "requestDetailForm" } })
+                            </div>
+                        </div>
+                        <div class="col">
+                            @Html.LabelFor(m => m.RequestDetail.Request.RequestStatusID)
+                            <div class="col">
+                                @Html.DropDownListFor(m => m.RequestDetail.Request.RequestStatusID, Model.GetRequestStatuses(), new { @class = "ts-control", form = "requestDetailForm" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="row">
+                            @Html.LabelFor(m => m.RequestDetail.Request.Description)
+                            <div class="col">
+                                @Html.TextAreaFor(m => m.RequestDetail.Request.Description, new { @class = "ts-control", form = "requestDetailForm" })
+                                @Html.ValidationMessageFor(m => m.RequestDetail.Request.Description)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        @Html.Label("File")
+                        <div class="row">
+                            <input class="form-control" accept="application/pdf" id="RequestDetail_Request_OnePagerDocument" type="file" asp-for="RequestDetail.Request.OnePagerDocument" form="requestDetailForm">
+                        </div>
+                    </div>
+                    @*&& (Model.RequestDetail.Request.RemainingGiftAmount > 0) this was part of the condition below*@
+                    @*
+                    if (Model.RequestDetail.Request.MaxDisbursementDate.Year == 1 || (Model.RequestDetail.Request.MaxDisbursementDate >= new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)))
+                    {
+                    *@
+                    <div class="col d-flex justify-content-end p-2">
+                        @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                        {
+                            <button class="btn btn-primary save" type="button" id="SaveRequestBtn">
+                                Save
+                            </button>
+                        }
+                    </div>
+                    @*}*@
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (Model.RequestDetail.Request.RequestID != 0)
+    {
+        <div class="col-xl-5 col-lg-12">
+            <h5>Gifts</h5>
+            <div class="col" id="giftsContainer">
+                <table class="table table-hover table-striped table-bordered" id="GiftsTable">
+                    <thead>
+                        <tr>
+                            <th class="text-center align-middle">
+                                <div>
+                                    @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                                    {
+                                        <button class="btn btn-success" type="button" id="addGiftBtn" data-request-id="@Model.RequestDetail.Request.RequestID">
+                                            <i class="fa fa-plus-circle"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </th>
+                            <th>Condition</th>
+                            <th>Recurring</th>
+                            <th>Gift Amount</th>
+                            <th>Next Disbursement</th>
+                        </tr>
+                    </thead>
+                    <tbody class="giftsTable">
+                        @foreach (var g in Model.RequestDetail.Gifts)
+                        {
+                            <tr>
+                                <td class="d-flex justify-content-around">
+                                    <button data-gift-id="@g.GiftID" data-request-id="@g.RequestID" type="button" class="btn btn-primary mx-1 load-gift"><i class="fa fa-pencil"></i></button>
+                                    @if (g.GiftScheduleCount < 1)
+                                    {
+                                        @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                                        {
+                                            <button type="button" class="btn btn-danger mx-1 delete-gift" data-giftid="@g.GiftID"><i class="fa fa-trash"></i></button>
+                                        }
+                                    }
+                                </td>
+                                @{
+                                    string condition = g.Conditional == true ? "Conditional" : "Non-Conditional";
+                                    string recurring = g.Recurring == true ? "Recurring" : "Non-Recurring";
+                                }
+                                <td>@condition</td>
+                                <td>@recurring</td>
+                                <td>@g.GiftAmount.ToString("C")</td>
+                                @if (g.NextDisbursement.HasValue)
+                                {
+                                    <td>@g.NextDisbursement.Value.Month.ToString()/@g.NextDisbursement.Value.Year.ToString()</td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    <div class="d-flex justify-content-start">
+        <div class="row px-1">
+            @Html.LabelFor(m => m.RequestDetail.Request.LastChangeUser)
+            <div class="col">
+                @Html.DisplayFor(m => m.RequestDetail.Request.LastChangeUser)
+            </div>
+        </div>
+        <div class="row px-1">
+            @Html.LabelFor(m => m.RequestDetail.Request.LastChangeDttm)
+            <div class="col">
+                @Html.DisplayFor(m => m.RequestDetail.Request.LastChangeDttm)
+            </div>
+        </div>
+    </div>
+</div>

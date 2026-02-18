@@ -1,0 +1,145 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.PartnerTypeViewModel
+@section scripts
+    {
+    <script>
+        $(document).ready(function () {
+            //page load
+            window.onload = function () {
+                if ("@Model.Error" == "True"){
+                $("#errorModal").modal("show");
+                }
+                loadPage();
+            }
+            //event handlers
+            $("#tab-items-body").on("click", "#editPartnerTypeBtn", function () {
+                $("#addEditPartnerTypeModal").modal("show");
+                $("#PartnerType_PartnerTypeId").val($(this).data("partnertypeid"));
+                $("#PartnerType_PartnerTypeName").val($(this).data("partnertypename"));
+            });
+
+            $("#tab-items-body").on("click", "#deletePartnerTypeBtn", function () {
+                $("#deleteModal").modal("show");
+                $("#PartnerType_PartnerTypeId").val($(this).data("partnertypeid"));
+                $("#PartnerType_PartnerTypeName").val('-1');
+            });
+
+            $("#addEditPartnerTypeBtn").on("click", function () {
+                $("#addEditPartnerTypeModal").modal("show");
+                $("#PartnerType_PartnerTypeId").val(0);
+                $("#PartnerType_PartnerTypeName").val(null);
+            });
+
+            $("#addEditPartnerTypeModal").on('hidden.bs.modal', function () {
+                $("#PartnerType_PartnerTypeId").val(0);
+                $("#PartnerType_PartnerTypeName").val(null);
+                $(".field-validation-error").empty();
+            });
+
+            $("#deleteModal").on('hidden.bs.modal', function () {
+                $("#PartnerType_PartnerTypeId").val(0);
+                $("#PartnerType_PartnerTypeName").val(null);
+            });
+        })
+    </script>
+}
+
+@using (Html.BeginForm("SavePartnerType", "PartnerTypes", FormMethod.Post, new { id = "newPartnerTypeForm" }))
+{
+    @Html.HiddenFor(m => m.PartnerType.PartnerTypeId)
+    <div class="modal fade" id="addEditPartnerTypeModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Partner Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="col">
+                        <div class="row mt-1">
+                            @Html.LabelFor(m => m.PartnerType.PartnerTypeName)
+                            <div class="col">
+                                @Html.EditorFor(m => m.PartnerType.PartnerTypeName, new { htmlAttributes = new { @class = "form-control" } })
+                                @Html.ValidationMessageFor(m => m.PartnerType.PartnerTypeName)
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="savePartnerTypeBtn">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-8">
+            <div class="card">
+                <div class="card-header bg-primary">
+                    <h5>Partner Types</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover table-striped table-bordered mytables" id="PartnerTypesTable">
+                        <thead>
+                            <tr class="align-middel">
+                                <th class="text-center">
+                                    <button type="button" id="addEditPartnerTypeBtn" class="btn btn-success"><i class="fa fa-plus"></i></button>
+                                </th>
+                                <th style="width:80%;">Partner Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-items-body">
+                            @foreach (var r in Model.PartnerTypes)
+                            {
+                                <tr class="align-middle">
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-primary" id="editPartnerTypeBtn"
+                                                data-PartnerTypeId="@r.PartnerTypeId"
+                                                data-PartnerTypeName="@r.PartnerTypeName">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" id="deletePartnerTypeBtn"
+                                                data-PartnerTypeId="@r.PartnerTypeId">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        @r.PartnerTypeName
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="deleteModal" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content text-center">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Partner Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <p class="modal-body">Are you sure you want to delete partner type.</p>
+                <div class="modal-footer">
+                    <input type="button" value="Yes" style="vertical-align:middle;" class="btn btn-danger float-center" onclick="submit()">
+                    <input type="button" value="No" style="vertical-align:middle;" class="btn btn-secondary float-center" data-bs-dismiss="modal">
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="errorModal" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <p class="modal-body">An error has occured when modifying partner type. If you are trying to delete make sure it is not in use.</p>
+            <div class="modal-footer">
+                <input type="button" value="Ok" style="vertical-align:middle;" class="btn btn-primary float-center" data-bs-dismiss="modal">
+            </div>
+        </div>
+    </div>
+</div>

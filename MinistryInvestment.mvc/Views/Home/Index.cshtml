@@ -1,0 +1,97 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.HomeViewModel
+<style>
+    img {
+        max-height: 50px;
+        max-width: 200px;
+        height: auto;
+        width: auto;
+    }
+</style>
+@section scripts
+{
+    <script>
+        window.onload = function () {
+            if ($("#organizationFound").val() == 'False') {
+                $("#noOrganizationFoundModal").modal("show");
+            }
+            loadPage();
+        }
+    </script>
+}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-primary">
+                <h5>Pending Requests</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-striped table-bordered mytables" id="RequestsTable">
+                    <thead>
+                        <tr class="align-middel">
+                            <th></th>
+                            <th>Organization</th>
+                            <th>Month/Year</th>
+                            <th>Project Type</th>
+                            <th>Status</th>
+                            <th>Requested Amount</th>
+                            <th>Last Change User</th>
+                            <th>Last Change Date and Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tab-Requests-body">
+                        @foreach (var R in Model.Requests)
+                        {
+                            <tr class="align-middle">
+                                <td class="text-center">
+                                    <a class="btn btn-primary"
+                                       data-RequestId="@R.RequestID"
+                                       data-OrganizationID="@R.OrganizationID"
+                                       data-Year="@R.Year"
+                                       data-Month="@R.Month"
+                                       data-ProjectTypeID="@R.ProjectTypeID"
+                                       data-ProjectTypeOther="@R.ProjectTypeOther"
+                                       data-RequestStatusID="@R.RequestStatusID"
+                                       data-Description="@R.Description"
+                                       data-Response="@R.Response"
+                                       href="@Url.Action("Index", "Organization", new {OrganizationID = R.OrganizationID, RequestID = R.RequestID})"
+                                    @*onclick="request.loadRequestPartial('@Url.Action("LoadFormPartial", "Organization", new {OrganizationID = R.OrganizationID, RequestID = R.RequestID})')"*@>
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("Index", "Organization", new { R.OrganizationID , RequestID = 0})"
+                                       class="btn btn-link">
+                                        @R.OrganizationName
+                                        @if (R.OrganizationLogo != null)
+                                        {
+                                            <img src='data:image/BitMap;base64,@Convert.ToBase64String(R.OrganizationLogo)' class="p-2" />
+                                        }
+                                    </a>
+                                </td>
+                                <td>
+                                    @R.VoteDate.Month.ToString()/@R.VoteDate.Year.ToString()
+                                </td>
+                                <td>
+                                    @Model.ProjectTypes.First(x => x.ProjectTypeId == R.ProjectTypeID).ProjectTypeName
+                                </td>
+                                <td>
+                                    @Model.RequestStatuses.First(x => x.RequestStatusID == R.RequestStatusID).RequestStatusName
+                                </td>
+                                <td>
+                                    @R.RequestedAmount.ToString("C")
+                                </td>
+                                <td>
+                                    @R.LastChangeUser
+                                </td>
+                                <td>
+                                    @R.LastChangeDttm
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

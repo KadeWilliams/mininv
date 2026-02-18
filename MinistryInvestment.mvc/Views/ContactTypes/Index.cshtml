@@ -1,0 +1,147 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.ContactTypeViewModel
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            //page load
+            window.onload = function () {
+                if ("@Model.Error" == "True") {
+                    $("#errorModal").modal("show");
+                }
+                loadPage();
+            }
+            //event handlers
+            $("#tab-items-body").on("click", "#editContactTypeBtn", function () {
+                $("#addEditContactTypeModal").modal("show");
+                $("#ContactType_ContactTypeId").val($(this).data("contacttypeid"));
+                $("#ContactType_ContactTypeName").val($(this).data("contacttypename"));
+            });
+
+            $("#tab-items-body").on("click", "#deleteContactTypeBtn", function () {
+                $("#deleteModal").modal("show");
+                $("#ContactType_ContactTypeId").val($(this).data("contacttypeid"));
+                $("#ContactType_ContactTypeName").val('-1');
+            });
+
+            $("#addEditContactTypeBtn").on("click", function () {
+                $("#addEditContactTypeModal").modal("show");
+                $("#ContactType_ContactTypeId").val(0);
+                $("#ContactType_ContactTypeName").val(null);
+
+            });
+
+            $("#addEditContactTypeModal").on('hidden.bs.modal', function () {
+                $("#ContactType_ContactTypeId").val(0);
+                $("#ContactType_ContactTypeName").val(null);
+                $(".field-validation-error").empty();
+            });
+
+            $("#deleteModal").on('hidden.bs.modal', function () {
+                $("#ContactType_ContactTypeId").val(0);
+                $("#ContactType_ContactTypeName").val(null);
+            });
+        })
+    </script>
+}
+
+@using (Html.BeginForm("SaveContactType", "ContactTypes", FormMethod.Post, new { id = "newContactTypeForm" }))
+{
+    @Html.HiddenFor(m => m.ContactType.ContactTypeId)
+    <div class="modal fade" id="addEditContactTypeModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Contact Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="col">
+                        <div class="row mt-1">
+                            @Html.LabelFor(m => m.ContactType.ContactTypeName)
+                            <div class="col">
+                                @Html.EditorFor(m => m.ContactType.ContactTypeName, new { htmlAttributes = new { @class = "form-control" } })
+                                @Html.ValidationMessageFor(m => m.ContactType.ContactTypeName)
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="saveContactTypeBtn">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-8">
+            <div class="card">
+                <div class="card-header bg-primary">
+                    <h5>Contact Types</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover table-striped table-bordered mytables" id="ContactTypesTable">
+                        <thead>
+                            <tr class="align-middel">
+                                <th class="text-center">
+                                    <button type="button" id="addEditContactTypeBtn" class="btn btn-success"><i class="fa fa-plus"></i></button>
+                                </th>
+                                <th style="width:80%;">Contact Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-items-body">
+                            @foreach (var ct in Model.ContactTypes)
+                            {
+                                <tr class="align-middle">
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-primary" id="editContactTypeBtn"
+                                                data-ContactTypeId="@ct.ContactTypeId"
+                                                data-ContactTypeName="@ct.ContactTypeName">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" id="deleteContactTypeBtn"
+                                                data-ContactTypeId="@ct.ContactTypeId">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        @ct.ContactTypeName
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="deleteModal" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content text-center">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Contact Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <p class="modal-body">Are you sure you want to delete contact type.</p>
+                <div class="modal-footer">
+                    <input type="button" value="Yes" style="vertical-align:middle;" class="btn btn-danger float-center" onclick="submit()">
+                    <input type="button" value="No" style="vertical-align:middle;" class="btn btn-secondary float-center" data-bs-dismiss="modal">
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="errorModal" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <p class="modal-body">An error has occured when modifying contact type. If you are trying to delete make sure it is not in use.</p>
+            <div class="modal-footer">
+                <input type="button" value="Ok" style="vertical-align:middle;" class="btn btn-primary float-center" data-bs-dismiss="modal">
+            </div>
+        </div>
+    </div>
+</div>

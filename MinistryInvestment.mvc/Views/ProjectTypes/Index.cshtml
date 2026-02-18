@@ -1,0 +1,147 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.ProjectTypeViewModel
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            //page load
+            window.onload = function () {
+                if ("@Model.Error" == "True") {
+                    $("#errorModal").modal("show");
+                }
+                loadPage();
+            }
+            //event handlers
+            $("#tab-items-body").on("click", "#editProjectTypeBtn", function () {
+                $("#addEditProjectTypeModal").modal("show");
+                $("#ProjectType_ProjectTypeId").val($(this).data("projecttypeid"));
+                $("#ProjectType_ProjectTypeName").val($(this).data("projecttypename"));
+            });
+
+            $("#tab-items-body").on("click", "#deleteProjectTypeBtn", function () {
+                $("#deleteModal").modal("show");
+                $("#ProjectType_ProjectTypeId").val($(this).data("projecttypeid"));
+                $("#ProjectType_ProjectTypeName").val('-1');
+            });
+
+            $("#addEditProjectTypeBtn").on("click", function () {
+                $("#addEditProjectTypeModal").modal("show");
+                $("#ProjectType_ProjectTypeId").val(0);
+                $("#ProjectType_ProjectTypeName").val(null);
+
+            });
+
+            $("#addEditProjectTypeModal").on('hidden.bs.modal', function () {
+                $("#ProjectType_ProjectTypeId").val(0);
+                $("#ProjectType_ProjectTypeName").val(null);
+                $(".field-validation-error").empty();
+            });
+
+            $("#deleteModal").on('hidden.bs.modal', function () {
+                $("#ProjectType_ProjectTypeId").val(0);
+                $("#ProjectType_ProjectTypeName").val(null);
+            });
+        })
+    </script>
+}
+
+@using (Html.BeginForm("SaveProjectType", "ProjectTypes", FormMethod.Post, new { id = "newProjectTypeForm" }))
+{
+    @Html.HiddenFor(m => m.ProjectType.ProjectTypeId)
+    <div class="modal fade" id="addEditProjectTypeModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Project Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="col">
+                        <div class="row mt-1">
+                            @Html.LabelFor(m => m.ProjectType.ProjectTypeName)
+                            <div class="col">
+                                @Html.EditorFor(m => m.ProjectType.ProjectTypeName, new { htmlAttributes = new { @class = "form-control" } })
+                                @Html.ValidationMessageFor(m => m.ProjectType.ProjectTypeName)
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="saveProjectTypeBtn">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-8">
+            <div class="card">
+                <div class="card-header bg-primary">
+                    <h5>Project Types</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover table-striped table-bordered mytables" id="ProjectTypesTable">
+                        <thead>
+                            <tr class="align-middel">
+                                <th class="text-center">
+                                    <button type="button" id="addEditProjectTypeBtn" class="btn btn-success"><i class="fa fa-plus"></i></button>
+                                </th>
+                                <th style="width:80%;">Project Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-items-body">
+                            @foreach (var ct in Model.ProjectTypes)
+                            {
+                                <tr class="align-middle">
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-primary" id="editProjectTypeBtn"
+                                                data-ProjectTypeId="@ct.ProjectTypeId"
+                                                data-ProjectTypeName="@ct.ProjectTypeName">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" id="deleteProjectTypeBtn"
+                                                data-ProjectTypeId="@ct.ProjectTypeId">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        @ct.ProjectTypeName
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="deleteModal" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content text-center">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Project Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <p class="modal-body">Are you sure you want to delete project type.</p>
+                <div class="modal-footer">
+                    <input type="button" value="Yes" style="vertical-align:middle;" class="btn btn-danger float-center" onclick="submit()">
+                    <input type="button" value="No" style="vertical-align:middle;" class="btn btn-secondary float-center" data-bs-dismiss="modal">
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="errorModal" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <p class="modal-body">An error has occured when modifying project type. If you are trying to delete make sure it is not in use.</p>
+            <div class="modal-footer">
+                <input type="button" value="Ok" style="vertical-align:middle;" class="btn btn-primary float-center" data-bs-dismiss="modal">
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,473 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.SearchViewModel
+@section scripts
+{
+    <script>
+        var searchTable;
+        const numberFormat = new Intl.NumberFormat();
+        $(document).ready(function () {
+            //forms
+            var Generic = { hideSelected: true, controlInput: null };
+            var tomselectOptions = {
+                create: true,
+                createOnBlur: true,
+                render: {
+                    no_results: null,
+                    option_create: null
+                },
+                addPrecedence: true,
+                maxItems: 100,
+                selectOnTab: true,
+                persist: false,
+                plugins: {
+                    remove_button: {
+                        title: 'Remove this item',
+                    },
+                    'clear_button': {
+                        'title': 'Remove all selected options',
+                    },
+                },
+                onDelete(values, event) { // prevents remove button from restoring on back space
+                    if (event.type == 'keydown') {
+                        document.getElementById(event.target.id.split('-')[0]).tomselect.setTextboxValue(values);
+                    }
+                    return true;
+                },
+                searchField: []
+            }
+            new TomSelect(".search_type", Generic);
+            new TomSelect(".select_searchCriteria", {
+                create: false,
+                maxItems: 100,
+                selectOnTab: true,
+                lockOptgroupOrder: true,
+                optgroupValueField: 'label',
+                disabledField: 'disabled',
+                searchField: ['text', 'value'],
+                plugins: {
+                    remove_button: {
+                        title: 'Remove this item',
+                    },
+                    'clear_button': {
+                        'title': 'Remove all selected options',
+                    },
+                    'optgroup_columns': {},
+                },
+                onDropdownOpen: function () {
+                    this.refreshItems();
+                    this.sync();
+                },
+            });
+            new TomSelect(".select-organizationNames", tomselectOptions);
+            new TomSelect(".select-contactNames", tomselectOptions);
+            var date = flatpickr("#SearchCriteria_Date", {
+                mode: "range",
+                allowInput: true,
+                plugins: [
+                    monthSelectPlugin({
+                        dateFormat: "m/Y",
+                    })
+                ]
+            });
+            loadPage();
+            //globals
+            var ContactNameField = document.getElementById("ContactNameField");
+            var SearchCard = document.getElementById("SearchCard");
+            var requestDatePicker = document.getElementById("requestDatePicker");
+            //functions
+            function makeTable(d) {
+                let paginated = false;
+                if (d.length > 500) {
+                    paginated = true;
+                }
+                var options = 'string';
+                if (searchTable) {
+                    searchTable.clear().destroy();
+                }
+                //get keys, vals, and length
+                let cols = GetColumns(Object.keys(d[0]));
+                let vals = Object.values(d);
+                let exelColumns = []
+                let len = GetColumns(Object.keys(d[0])).length - 1;
+                var searchType = $("#SearchCriteria_SearchType").val();
+                //make buttons and checkboxes
+                for (let object of d) {
+                    object['OrganizationID'] = '<div class="d-flex justify-content-center"><button type="button" id="openOrganization" class="btn btn-primary me-1" data-OrganizationID="' + object['OrganizationID'] + '" ><i class="fa fa-eye"></i></button><button type="button" id="openNewTab" class="btn btn-success" data-OrganizationID="' + object['OrganizationID'] + '" ><i class="fa-solid fa-arrow-up-right-from-square"></i></button></div>';
+
+                    if (object["Requested Amount"]) {
+                        object["Requested Amount"]
+                        let number = numberFormat.format(object["Requested Amount"]);
+                        object["Requested Amount"] = `$${number}`
+                    }
+
+                    if (object["Gift Amount"]) {
+                        let number = numberFormat.format(object["Gift Amount"]);
+                        object["Gift Amount"] = `$${number}`
+                    }
+
+                    if (object["Gift Schedule Amount"]) {
+                        let number = numberFormat.format(object["Gift Schedule Amount"]);
+                        object["Gift Schedule Amount"] = `$${number}`
+                    }
+                }
+                for (let i = 0; i < len; i++) {
+
+                    exelColumns[i] = i + 1;
+                }
+                //table definition
+
+                if ($("#SearchCriteria_SearchType").val() == 3) {
+                    searchTable = new DataTable('#searchTable', {
+                        columns: cols,
+                        data: d,
+                        order: [],
+                        scrollY: '80vh',
+                        scrollCollapse: true,
+                        paging: paginated,
+                        deferRender: true,
+                        pageLength: 500,
+                        layout: {
+                            topStart: {
+                                buttons: [
+                                    {
+                                        extend: 'excel',
+                                        exportOptions: {
+                                            columns: exelColumns,
+                                        },
+                                        title: null,
+                                        filename: $("#SearchCriteria_SearchType :selected").text() + " Results " + new Date().toLocaleString(undefined, {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })
+                                    }
+                                ],
+                            }
+                        },
+                        columnDefs: [
+                            {
+                                targets: 0,
+                                searchable: false,
+                                orderable: false
+                            },
+                            {
+                                'orderData': [1], 'targets': [7]
+                            },
+                            {
+                                targets: 1,
+                                data: 'disbursementDate',
+                                render: function (data) {
+                                    return new Date(data).getTime();
+                                },
+                                visible: false,
+                            },
+                        ],
+                    });
+                } else if ($("#SearchCriteria_SearchType").val() == 1) {
+                    searchTable = new DataTable('#searchTable', {
+                        columns: cols,
+                        data: d,
+                        order: [],
+                        scrollY: '80vh',
+                        scrollCollapse: true,
+                        paging: paginated,
+                        deferRender: true,
+                        pageLength: 500,
+                        layout: {
+                            topStart: {
+                                buttons: [
+                                    {
+                                        extend: 'excel',
+                                        exportOptions: {
+                                            columns: exelColumns,
+                                        },
+                                        title: null,
+                                        filename: $("#SearchCriteria_SearchType :selected").text() + " Results " + new Date().toLocaleString(undefined, {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })
+                                    }
+                                ],
+                            }
+                        },
+                        columnDefs: [
+                            {
+                                targets: 0,
+                                searchable: false,
+                                orderable: false
+                            },
+                            {
+                                'orderData': [1], 'targets': [4]
+                            },
+                            {
+                                targets: 1,
+                                data: 'voteDate',
+                                render: function (data) {
+                                    return new Date(data).getTime();
+                                },
+                                visible: false,
+                            },
+                        ],
+                    });
+                } else {
+                    searchTable = new DataTable('#searchTable', {
+                        columns: cols,
+                        data: d,
+                        order: [],
+                        scrollY: '80vh',
+                        scrollCollapse: true,
+                        paging: paginated,
+                        deferRender: true,
+                        pageLength: 500,
+                        layout: {
+                            topStart: {
+                                buttons: [
+                                    {
+                                        extend: 'excel',
+                                        exportOptions: {
+                                            columns: exelColumns,
+                                        },
+                                        title: null,
+                                        filename: $("#SearchCriteria_SearchType :selected").text() + " Results " + new Date().toLocaleString(undefined, {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })
+                                    }
+                                ],
+                            }
+                        },
+                        columnDefs: [
+                            {
+                                targets: 0,
+                                searchable: false,
+                                orderable: false
+                            }, {
+                                targets: 1,
+                                visible: false,
+                                searchable: false,
+                                orderable: false
+                            },
+                        ],
+                    });
+                }
+            }
+            function GetColumns(data) {
+                formatedCollumns = [];
+                $.each(data, function (i, item) {
+                    if (i === 0) {
+                        var temp = { data: item };
+                        formatedCollumns[i] = temp;
+                    }
+                    else {
+                        var temp = { data: item, title: item };
+                        formatedCollumns[i] = temp;
+                    }
+
+                });
+                return formatedCollumns;
+            }
+            //event handlers
+            $("#searchBtn").on("click", function () {
+                //SearchCard.style.display = "none";
+                var frm = $('#searchForm');
+                $.ajax({
+                    type: frm.attr('method'),
+                    url: frm.attr('action'),
+                    dataType: "json",
+                    data: frm.serialize(),
+                    success: function (d) {
+                        try {
+                            if (!d || d == false) {
+                                throw new Error('No results found.');
+                            }
+                            makeTable(d);
+                            var SearchCard = document.getElementById("SearchCard");
+                            SearchCard.style.display = "block";
+                            searchTable.columns.adjust();
+                        }
+                        catch (e) {
+                            console.error(e);
+                            $("#noResultsModal").modal("show");
+                        }
+                    },
+                    error: function (data) {
+                        console.log('An error occurred.');
+                        console.log(data);
+                    },
+                });
+            });
+            $("#resetBtn").on("click", function () {
+                date.clear();
+                var buttons = document.getElementsByClassName('clear-button');
+                for (var i = 0; i < buttons.length; i++)
+                    buttons[i].click();
+                SearchCard.style.display = "none";
+                $("#SearchCriteria_LowerDonationAmount").val("")
+                $("#SearchCriteria_UpperDonationAmount").val("")
+            });
+            $("#searchTable").on("click", "button", function () {
+                let organizationID = $(this).data("organizationid");
+                let organizationURL = "@Url.Action("Index", "Organization", new { organizationID = "jsorganizationID" })";
+                organizationURL = organizationURL.replace("jsorganizationID", organizationID);
+                if (this.id == "openNewTab") {
+                    window.open(organizationURL);
+                } else {
+                    window.location = organizationURL;
+                }
+            });
+            $("#SearchCriteria_SearchType").on("change", function () {
+                if ($("#SearchCriteria_SearchType").val() == 0) { // organization search
+                    $('[label="Contact Type"]').attr('disabled', 'disabled');
+                    $('[label=Category]').removeAttr('disabled');
+                    $('[label=Country]').removeAttr('disabled');
+                    $('[label=Region]').removeAttr('disabled');
+                    $('[label="Partner Type"]').removeAttr('disabled');
+                    $('[label="Project Type"]').attr('disabled', 'disabled');
+                    $('[label=Status]').attr('disabled', 'disabled');
+                    $('[label="Vote Team"]').attr('disabled', 'disabled');
+                    $('[label="Flags"]').attr('disabled', 'disabled');
+                    ContactNameField.style.display = "none";
+                    requestDatePicker.style.display = "none";
+                    $("#donation-container").addClass("d-none");
+                } else if ($("#SearchCriteria_SearchType").val() == 1) { // request search
+                    $('[label="Contact Type"]').attr('disabled', 'disabled');
+                    $('[label=Category]').attr('disabled', 'disabled');
+                    $('[label=Country]').attr('disabled', 'disabled');
+                    $('[label=Region]').attr('disabled', 'disabled');
+                    $('[label="Partner Type"]').attr('disabled', 'disabled');
+                    $('[label="Project Type"]').removeAttr('disabled');
+                    $('[label=Status]').removeAttr('disabled');
+                    $('[label="Vote Team"]').removeAttr('disabled');
+                    $('[label="Flags"]').attr('disabled', 'disabled');
+                    ContactNameField.style.display = "none";
+                    requestDatePicker.style.display = "block";
+                    $("#donation-container").removeClass("d-none");
+                } else if ($("#SearchCriteria_SearchType").val() == 2) { // contact search
+                    $('[label="Contact Type"]').removeAttr('disabled');
+                    $('[label=Category]').attr('disabled', 'disabled');
+                    $('[label=Country]').attr('disabled', 'disabled');
+                    $('[label=Region]').attr('disabled', 'disabled');
+                    $('[label="Partner Type"]').attr('disabled', 'disabled');
+                    $('[label="Project Type"]').attr('disabled', 'disabled');
+                    $('[label=Status]').attr('disabled', 'disabled');
+                    $('[label="Vote Team"]').attr('disabled', 'disabled');
+                    $('[label="Flags"]').attr('disabled', 'disabled');
+                    ContactNameField.style.display = "block";
+                    requestDatePicker.style.display = "none";
+                    $("#donation-container").addClass("d-none");
+                } else if ($("#SearchCriteria_SearchType").val() == 3) { // gift search
+                    $('[label="Contact Type"]').attr('disabled', 'disabled');
+                    $('[label=Category]').attr('disabled', 'disabled');
+                    $('[label=Country]').attr('disabled', 'disabled');
+                    $('[label=Region]').attr('disabled', 'disabled');
+                    $('[label="Partner Type"]').attr('disabled', 'disabled');
+                    $('[label="Project Type"]').removeAttr('disabled');
+                    $('[label=Status]').attr('disabled', 'disabled');
+                    $('[label="Vote Team"]').removeAttr('disabled');
+                    $('[label="Flags"]').removeAttr('disabled');
+                    ContactNameField.style.display = "none";
+                    requestDatePicker.style.display = "block";
+                    $("#donation-container").removeClass("d-none");
+                }
+                $("#resetBtn").click();
+            });
+        });
+    </script>
+}
+<style>
+    [class="optgroup-header"] {
+        color: #1E1E21 !Important;
+        font-weight: normal bold;
+        font-weight: 600;
+    }
+
+    [data-disabled] {
+        display: none;
+    }
+
+    [class="option"] {
+        padding-left: 20px !important;
+    }
+
+    [class="option active"] {
+        padding-left: 20px !important;
+    }
+
+    #slider {
+        border: 1px solid black;
+    }
+
+    .ui-slider-handle {
+        border: 3px solid black;
+        color: black;
+        border-radius: 25%;
+    }
+
+    .ui-slider-horizontal {
+        height: 2px;
+    }
+</style>
+@using (Html.BeginForm("Search", "Search", FormMethod.Post, new { id = "searchForm", autocomplete = "off" }))
+{
+    <div class="row" id="tomselectRow">
+        <div class="col-2">
+            @Html.DropDownListFor(m => m.SearchCriteria.SearchType, Model.GetSearchFor(), new { @class = "search_type" })
+        </div>
+        <div class="col-10">
+            <div class="col-12" style="display:none;" , id="ContactNameField">
+                @Html.ListBoxFor(m => m.SearchCriteria.ContactName, new List<SelectListItem>(), new { @class = "select-contactNames", placeholder = "Search for specfic contact name(s)..." })
+                <div class="mt-1"></div>
+            </div>
+            <div class="col-12">
+                @Html.ListBoxFor(m => m.SearchCriteria.OrganizationName, new List<SelectListItem>(), new { @class = "select-organizationNames", placeholder = "Search for specfic organization name(s)..." })
+            </div>
+            <div class="mt-1"></div>
+            <div class="col-12">
+                @Html.ListBoxFor(m => m.SearchCriteria.criteria, Model.GetsearchData(), new { @class = "select_searchCriteria", placeholder = "Search for specific criteria..." })
+            </div>
+            <div class="col-2" id="requestDatePicker" style="display:none">
+                @Html.EditorFor(m => m.SearchCriteria.Date, new { htmlAttributes = new { @class = "ts-control", placeholder = "Date range (Optional)..." } })
+            </div>
+            <div id="donation-container" class="row d-none">
+                <div class="col-3">
+                    @Html.EditorFor(m => m.SearchCriteria.LowerDonationAmount, new { htmlAttributes = new { @class = "ts-control", @placeholder = "Lower Gift Amount" } })
+                </div>
+                <div class="col-3">
+                    @Html.EditorFor(m => m.SearchCriteria.UpperDonationAmount, new { htmlAttributes = new { @class = "ts-control", @placeholder = "Upper Gift Amount" } })
+                </div>
+            </div>
+        </div>
+        <div class="row d-flex justify-content-end">
+            <div class="col-2">
+                <input type="button" name="Reset" id="resetBtn" style="width:70px; float:inline-end;" value="Reset" class="btn btn-danger">
+                <input type="button" name="Search" id="searchBtn" value="Search" style="width:70px; float:inline-end" class="btn btn-primary me-1">
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="display:none;" id="SearchCard">
+        <div class="card-header bg-primary">
+            <h5>Search Results</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover table-striped table-bordered" id="searchTable" style="width:100%;">
+                <thead>
+                    <tr class="align-middle">
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+}
+<div class="modal fade" id="noResultsModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">Results</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <p class="modal-body">No results found.</p>
+            <div class="modal-footer"><input type="button" value="Ok" style="vertical-align:middle;" class="btn btn-primary" data-bs-dismiss="modal"></div>
+        </div>
+    </div>
+</div>

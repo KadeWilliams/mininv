@@ -1,0 +1,16 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.BaseViewModel
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            //load page
+            window.onload = function () {
+                loadPage();
+            }
+        });
+    </script>
+}
+<h1 class="h2 text-danger">You do not have permission to view the requested resource.</h1>

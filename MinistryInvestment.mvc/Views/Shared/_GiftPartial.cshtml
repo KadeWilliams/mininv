@@ -1,0 +1,312 @@
+﻿@model MinistryInvestment.Mvc.ViewModels.GiftPartialViewModel
+@using MinistryInvestment.Core.Models
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a class="btn btn-link p-0 m-0 back-to-org-list" id="back-to-org-list" data-organization-id="@Model.GiftDetail.Gift.OrganizationID">Back to Request List</a>
+        </li>
+        <li class="breadcrumb-item">
+            @if (Model.GiftDetail.Gift.GiftID != 0)
+            {
+                <a class="btn btn-link p-0 m-0 back-to-request" data-request-id="@Model.GiftDetail.Gift.RequestID">Back to Request</a>
+            }
+            else
+            {
+                <a class="btn btn-link p-0 m-0 back-to-request" data-request-id="@Model.GiftDetail.RequestID">Back to Request</a>
+            }
+        </li>
+    </ol>
+</nav>
+
+@Html.HiddenFor(m => m.GiftDetail.SaveGift, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.SaveGiftSchedule, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.Gift.GiftID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.GiftSchedule.GiftScheduleID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.Gift.ConditionID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.Gift.RequestID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.RequestID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.GiftSchedule.GiftScheduleID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.DeleteGiftSchedule, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.DeleteCondition, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.Gift.ConditionID, new { form = "giftDetailForm" })
+@Html.HiddenFor(m => m.GiftDetail.Gift.RemainingGiftAmount)
+@Html.HiddenFor(m => m.GiftDetail.Gift.Rebalance, new { form = "giftDetailForm" })
+<div class="row">
+    <div class="col-xl-4 col-lg-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h4>Gift</h4>
+                <div class="text-danger">
+                    @Html.LabelFor(m => m.GiftDetail.Gift.RemainingGiftAmount)
+                    @Html.DisplayFor(m => m.GiftDetail.Gift.RemainingGiftAmount)
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="row">
+                        <div class="col">
+                            <div class="col">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.GiftAmount)
+                                @Html.EditorFor(m => m.GiftDetail.Gift.GiftAmount, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                                @Html.ValidationMessageFor(m => m.GiftDetail.Gift.GiftAmount)
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div id="progress-bar-container" data-gift-amount="@Model.GiftDetail.Gift.GiftAmount" data-remaining-gift-amount="@Model.GiftDetail.Gift.RemainingGiftAmount">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row my-2">
+                        <div class="col-6">
+                            <div class="col">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.Conditional, new { @style = "width:75px;" })
+                                @Html.CheckBoxFor(m => m.GiftDetail.Gift.Conditional, new { @class = "form-check-input", form = "giftDetailForm" })
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="col">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.Recurring, new { @style = "width: 75px;" })
+                                @Html.CheckBoxFor(m => m.GiftDetail.Gift.Recurring, new { @class = "form-check-input", form = "giftDetailForm" })
+                            </div>
+                        </div>
+                    </div>
+                    @{
+                        string conditionalDisplay = "d-none";
+                    }
+                    @if (Model.GiftDetail.Gift.Conditional)
+                    {
+                        conditionalDisplay = "";
+                    }
+                    <div class="row @conditionalDisplay" id="conditionInformation">
+                        <div class="row">
+                            <div class="col-12">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.ConditionDescription, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                <div class="col">
+                                    @Html.EditorFor(m => m.GiftDetail.Gift.ConditionDescription, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                                    @Html.ValidationMessageFor(m => m.GiftDetail.Gift.ConditionDescription)
+                                </div>
+                            </div>
+                            <div class="col">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.ConditionDeadline, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                                <div class="col">
+                                    @Html.EditorFor(m => m.GiftDetail.Gift.ConditionDeadline, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                                </div>
+                            </div>
+                            <div class="col m-2">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.ConditionCompleted, new { @style = "width: 100px;" })
+                                @Html.CheckBoxFor(m => m.GiftDetail.Gift.ConditionCompleted, new { @class = "form-check-input", form = "giftDetailForm" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="col">
+                                @Html.LabelFor(m => m.GiftDetail.Gift.PaymentMemo)
+                                @Html.EditorFor(m => m.GiftDetail.Gift.PaymentMemo, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            @Html.LabelFor(m => m.GiftDetail.Gift.GiftNote)
+                            <div class="col">
+                                @Html.TextAreaFor(m => m.GiftDetail.Gift.GiftNote, new { @class = "ts-control", form = "giftDetailForm" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col d-flex justify-content-end p-2">
+                        @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                        {
+                            <button class="btn btn-primary save" type="button" id="SaveGiftBtn" @*onclick="request.saveGift('@Url.Action("SaveGiftForm","Organization")', @Model.GiftDetail.Gift.RequestID)"*@>
+                                Save
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (Model.GiftDetail.Gift.GiftID != 0)
+    {
+        <div class="col-xl-8 col-lg-12">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="schedules-tab" data-bs-toggle="tab" data-bs-target="#schedules" type="button" role="tab" aria-controls="schedules" aria-selected="true">Schedules</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="innerTabContent">
+                <div class="tab-pane fade show active card p-1" id="schedules" role="tabpanel" aria-labelledby="schedules-tab">
+                    <table class="table table-hover table-striped table-bordered" id="GiftSchedulesTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="d-flex justify-content-evenly">
+                                        @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                                        {
+                                            @if (Model.GiftDetail.Gift.RemainingGiftAmount > 0)
+                                            {
+                                                <button type="button" class="btn btn-success align-middle" id="addGiftSchedule" data-vote-date='@Model.GiftDetail.Gift.VoteDate'>
+                                                    <i class="fa fa-plus-circle"></i>
+                                                </button>
+                                                string display = Model.GiftDetail.Gift.Recurring && Model.GiftDetail.Gift.GiftSchedules.Count() < 1 ? "" : "d-none";
+                                                <button type="button" class="btn btn-warning align-middle @display" id="GenerateGiftScheduleBtn">
+                                                    Generate
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </th>
+                                <th>Disbursement Date</th>
+                                <th>Amount</th>
+                                <th>Payment Info</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-GiftSchedules-body">
+                            @foreach (var gs in Model.GiftDetail.Gift.GiftSchedules)
+                            {
+                                <tr class="giftScheduleRecord">
+                                    <td>
+                                        <div class="d-flex justify-content-center">
+                                            <button class="btn btn-primary mx-1 edit-schedule" type="button" data-gift-schedule-id='@gs.GiftScheduleID' data-disbursement-date='@gs.DisbursementDate' data-amount='@gs.Amount' data-include-payment-info='@gs.IncludePaymentInfo'>
+                                                <i class="fa fa-pencil"></i>
+                                            </button>
+                                            @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                                            {
+                                                <button type="button" class="btn btn-danger mx-1 delete-schedule" data-scheduleid='@gs.GiftScheduleID'><i class="fa fa-trash"></i></button>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@gs.DisbursementDate.Value.Month.ToString()/@gs.DisbursementDate.Value.Year.ToString()</td>
+                                    <td>@gs.Amount.ToString("C2")</td>
+                                    @{
+                                        string paymentInfo = gs.IncludePaymentInfo == true ? "Include" : "Exclude";
+                                    }
+                                    <td>@paymentInfo</td>
+                                    <td>@gs.DisbursementDate</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="d-flex justify-content-start">
+        <div class="row px-1">
+            @Html.LabelFor(m => m.GiftDetail.Gift.LastChangeUser)
+            <div class="col">
+                @Html.DisplayFor(m => m.GiftDetail.Gift.LastChangeUser)
+            </div>
+        </div>
+        <div class="row px-1">
+            @Html.LabelFor(m => m.GiftDetail.Gift.LastChangeDttm)
+            <div class="col">
+                @Html.DisplayFor(m => m.GiftDetail.Gift.LastChangeDttm)
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.HiddenFor(m => m.GiftDetail.SaveGiftSchedule, new { form = "giftDetailForm" })
+<div class="modal fade" id="addEditGiftScheduleModal" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog hidden" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gift Schedule</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="row">
+                        <div class="text-danger d-flex justify-content-end">
+                            @Html.LabelFor(m => m.GiftDetail.Gift.RemainingGiftAmount):
+                            @Html.DisplayFor(m => m.GiftDetail.Gift.RemainingGiftAmount)
+                        </div>
+                    </div>
+                    <div class="row">
+                        @Html.LabelFor(m => m.GiftDetail.GiftSchedule.DisbursementDate, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                        <div class="col">
+                            @Html.EditorFor(m => m.GiftDetail.GiftSchedule.DisbursementDate, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                            @Html.ValidationMessageFor(m => m.GiftDetail.GiftSchedule.DisbursementDate)
+                        </div>
+                    </div>
+                    <div class="row">
+                        @Html.HiddenFor(m => m.GiftDetail.GiftSchedule.PreviousAmount)
+                        @Html.LabelFor(m => m.GiftDetail.GiftSchedule.Amount, new { @class = "detailHeaderLabel pt-1 pb-0 px-2" })
+                        <div class="col">
+                            @Html.EditorFor(m => m.GiftDetail.GiftSchedule.Amount, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                            @Html.ValidationMessageFor(m => m.GiftDetail.GiftSchedule.Amount)
+                        </div>
+                    </div>
+                    <div class="row py-2">
+                        @Html.LabelFor(m => m.GiftDetail.GiftSchedule.IncludePaymentInfo, new { @class = "w-50" })
+                        <div class="col">
+                            @Html.EditorFor(m => m.GiftDetail.GiftSchedule.IncludePaymentInfo, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                {
+                    <button type="button" class="btn btn-primary save" id="saveGiftScheduleBtn" @*onclick="request.saveGift('@Url.Action("SaveGiftForm","Organization")', @Model.GiftDetail.Gift.RequestID, 'giftSchedule')"*@>Save</button>
+                    <button type="button" class="btn btn-success save" id="saveGiftScheduleRebalanceBtn" @*onclick="request.saveGift('@Url.Action("SaveGiftForm","Organization")', @Model.GiftDetail.Gift.RequestID, 'giftSchedule', true)"*@>Rebalance Save</button>
+                }
+                <button type="button" class="btn btn-secondary" id="cancelGiftScheduleBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@Html.HiddenFor(m => m.GiftDetail.GenerateSchedules, new { form = "giftDetailForm" })
+<div class="modal fade" id="GenerateModal" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog hidden" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate Schedule(s)</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col">
+                        @Html.LabelFor(m => m.GiftDetail.Gift.GiftAmount)
+                    </div>
+                    <div class="col">
+                        @Html.DisplayFor(m => m.GiftDetail.Gift.GiftAmount)
+                    </div>
+                </div>
+                <div class="row">
+                    @Html.LabelFor(m => m.GiftDetail.Gift.FrequencyType)
+                    <div class="col-6">
+                        <select form="giftDetailForm" class="ts-control" asp-for="@Model.GiftDetail.Gift.FrequencyType" asp-items="Html.GetEnumSelectList<Gift.Frequency>()"></select>
+                    </div>
+                    <div class="col-6">
+                        @Html.EditorFor(m => m.GiftDetail.Gift.SelectedFrequency, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                        @Html.ValidationMessageFor(m => m.GiftDetail.Gift.SelectedFrequency)
+                    </div>
+                </div>
+                <div class="row">
+                    @Html.LabelFor(m => m.GiftDetail.Gift.GiftStartDate)
+                    <div class="col">
+                        @Html.EditorFor(m => m.GiftDetail.Gift.GiftStartDate, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                    </div>
+                </div>
+                <div class="row">
+                    @Html.LabelFor(m => m.GiftDetail.GiftSchedule.InitialLumpSum)
+                    <div class="col">
+                        @Html.EditorFor(m => m.GiftDetail.GiftSchedule.InitialLumpSum, new { htmlAttributes = new { @class = "ts-control", form = "giftDetailForm" } })
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                @if (Model.MenuPermissions.HasEditPermissions || Model.MenuPermissions.HasAdminPermissions)
+                {
+                    <button type="button" class="btn btn-primary save" id="generateSchedulesBtn">Save</button>
+                }
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
